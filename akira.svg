@@ -1,0 +1,23 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="24" fill="url(#bg_grad)" />
+  
+  <path d="M64 25L30 95H50L64 65L78 95H98L64 25Z" fill="#00A3FF" />
+  
+  <path d="M64 25L30 95H42L64 48V25Z" fill="#003554" fill-opacity="0.5" />
+  
+  <rect x="55" y="58" width="35" height="4" rx="2" fill="#FF8A00" />
+  <rect x="62" y="68" width="28" height="4" rx="2" fill="#FF8A00" />
+  <rect x="58" y="78" width="32" height="4" rx="2" fill="#FF8A00" />
+  
+  <circle cx="52" cy="68" r="4" fill="#FF8A00" />
+  
+  <path d="M38 88L48 72" stroke="#003554" stroke-width="2" stroke-linecap="round" />
+  <path d="M42 92L52 76" stroke="#003554" stroke-width="2" stroke-linecap="round" />
+
+  <defs>
+    <linearGradient id="bg_grad" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1B3A" />
+      <stop offset="1" stop-color="#050510" />
+    </linearGradient>
+  </defs>
+</svg>

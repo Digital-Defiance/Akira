@@ -1,0 +1,12 @@
+{
+  "featureName": "autonomous-mode",
+  "currentPhase": "tasks",
+  "approvals": {
+    "requirements": true,
+    "design": true,
+    "tasks": true
+  },
+  "taskStatuses": {},
+  "createdAt": "2025-12-21T21:54:10.016Z",
+  "updatedAt": "2025-12-21T22:39:54.561Z"
+}

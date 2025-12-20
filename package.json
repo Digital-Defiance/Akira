@@ -1,0 +1,310 @@
+{
+  "name": "ai-capabilities-suite-akira",
+  "displayName": "ACS Akira",
+  "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing",
+  "version": "0.1.7",
+  "publisher": "DigitalDefiance",
+  "author": {
+    "name": "Digital Defiance, Jessica Mulein"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digital-defiance/akira"
+  },
+  "bugs": {
+    "url": "https://github.com/digital-defiance/akira/issues"
+  },
+  "homepage": "https://github.com/digital-defiance/akira#readme",
+  "keywords": [
+    "spec",
+    "specification",
+    "requirements",
+    "EARS",
+    "INCOSE",
+    "property-based testing",
+    "correctness",
+    "MCP",
+    "Model Context Protocol",
+    "copilot",
+    "github copilot",
+    "chat participant",
+    "design",
+    "architecture"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Testing",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "icon": "icon.png",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "spec",
+        "name": "spec",
+        "description": "Spec-driven development assistant with EARS requirements and property-based testing",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "create",
+            "description": "Create a new spec with requirements generation"
+          },
+          {
+            "name": "list",
+            "description": "List all specs with their current phase"
+          },
+          {
+            "name": "status",
+            "description": "Show detailed status for a spec"
+          },
+          {
+            "name": "update",
+            "description": "Update an existing spec"
+          },
+          {
+            "name": "execute",
+            "description": "Execute a task from the task list"
+          },
+          {
+            "name": "approve",
+            "description": "Approve a workflow phase (requirements, design, or tasks)"
+          },
+          {
+            "name": "unapprove",
+            "description": "Unapprove a workflow phase (requirements, design, or tasks)"
+          },
+          {
+            "name": "validate",
+            "description": "Validate requirements against EARS and INCOSE rules"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "akira.refreshSpecs",
+        "title": "Refresh Specs",
+        "category": "Akira",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "akira.debugCodeLens",
+        "title": "Debug Code Lens",
+        "category": "Akira"
+      },
+      {
+        "command": "akira.openSpec",
+        "title": "Open Spec",
+        "category": "Akira"
+      },
+      {
+        "command": "akira.createSpec",
+        "title": "Create New Spec",
+        "category": "Akira",
+        "icon": "$(add)"
+      },
+      {
+        "command": "akira.deleteSpec",
+        "title": "Delete Spec",
+        "category": "Akira"
+      },
+      {
+        "command": "akira.executeTask",
+        "title": "Execute Task",
+        "category": "Akira"
+      },
+      {
+        "command": "akira.openOrCreatePhaseDocument",
+        "title": "Open or Create Phase Document",
+        "category": "Akira"
+      },
+      {
+        "command": "akira.approvePhase",
+        "title": "Approve Current Phase",
+        "category": "Akira",
+        "icon": "$(pass)"
+      },
+      {
+        "command": "akira.unapprovePhase",
+        "title": "Unapprove Current Phase",
+        "category": "Akira",
+        "icon": "$(close)"
+      },
+      {
+        "command": "akira.continueSpec",
+        "title": "Continue to Next Phase",
+        "category": "Akira",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "akira.validateSpec",
+        "title": "Validate Spec",
+        "category": "Akira",
+        "icon": "$(check)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "akira.refreshSpecs",
+          "when": "view == specTreeView",
+          "group": "navigation"
+        },
+        {
+          "command": "akira.createSpec",
+          "when": "view == specTreeView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "akira.openSpec",
+          "when": "view == specTreeView && viewItem == spec",
+          "group": "inline"
+        },
+        {
+          "command": "akira.deleteSpec",
+          "when": "view == specTreeView && viewItem == spec",
+          "group": "context"
+        },
+        {
+          "command": "akira.approvePhase",
+          "when": "view == specTreeView && viewItem == spec",
+          "group": "actions@1"
+        },
+        {
+          "command": "akira.unapprovePhase",
+          "when": "view == specTreeView && viewItem == spec",
+          "group": "actions@2"
+        },
+        {
+          "command": "akira.continueSpec",
+          "when": "view == specTreeView && viewItem == spec",
+          "group": "actions@3"
+        },
+        {
+          "command": "akira.validateSpec",
+          "when": "view == specTreeView && viewItem == spec",
+          "group": "actions@4"
+        },
+        {
+          "command": "akira.approvePhase",
+          "when": "view == specTreeView && viewItem == phaseDocument",
+          "group": "actions@1"
+        },
+        {
+          "command": "akira.unapprovePhase",
+          "when": "view == specTreeView && viewItem == phaseDocument",
+          "group": "actions@2"
+        },
+        {
+          "command": "akira.continueSpec",
+          "when": "view == specTreeView && viewItem == phaseDocument",
+          "group": "actions@3"
+        },
+        {
+          "command": "akira.validateSpec",
+          "when": "view == specTreeView && viewItem == phaseDocument",
+          "group": "actions@4"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Akira",
+      "properties": {
+        "copilotSpec.specDirectory": {
+          "type": "string",
+          "default": ".kiro/specs",
+          "description": "Directory where spec files are stored",
+          "scope": "workspace"
+        },
+        "copilotSpec.strictMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Require all optional tasks to be completed",
+          "scope": "workspace"
+        },
+        "copilotSpec.propertyTestIterations": {
+          "type": "number",
+          "default": 100,
+          "minimum": 10,
+          "maximum": 10000,
+          "description": "Number of iterations for property-based tests",
+          "scope": "workspace"
+        },
+        "copilotSpec.autoApprove": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically approve workflow phases (not recommended)",
+          "scope": "workspace"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "akira-specs",
+          "title": "Akira",
+          "icon": "icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "akira-specs": [
+        {
+          "id": "specTreeView",
+          "name": "Specs",
+          "contextualTitle": "Akira Specs"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "specTreeView",
+        "contents": "No specs found in this workspace.\n[Create New Spec](command:akira.createSpec)\nOr use @spec in Copilot Chat to get started."
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "compile": "tsc --noEmit",
+    "package": "yarn build && npx vsce package",
+    "publish": "yarn build && npx vsce publish",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:e2e": "node ./dist/test/runTest.js",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vitest/ui": "^1.0.4",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.19.8",
+    "eslint": "^8.54.0",
+    "fast-check": "^3.15.0",
+    "glob": "^13.0.0",
+    "mocha": "^11.7.5",
+    "typescript": "^5.3.2",
+    "vitest": "^1.0.4"
+  },
+  "dependencies": {
+    "@ai-capabilities-suite/mcp-client-base": "^1.0.0",
+    "@ai-capabilities-suite/vscode-shared-status-bar": "^1.0.21",
+    "@modelcontextprotocol/sdk": "^0.5.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

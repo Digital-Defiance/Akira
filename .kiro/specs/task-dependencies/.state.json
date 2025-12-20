@@ -1,0 +1,12 @@
+{
+  "featureName": "task-dependencies",
+  "currentPhase": "requirements",
+  "approvals": {
+    "requirements": false,
+    "design": false,
+    "tasks": false
+  },
+  "taskStatuses": {},
+  "createdAt": "2025-12-21T21:55:10.624Z",
+  "updatedAt": "2025-12-21T21:55:10.624Z"
+}

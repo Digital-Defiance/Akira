@@ -1,0 +1,12 @@
+{
+  "featureName": "multimodal-input",
+  "currentPhase": "requirements",
+  "approvals": {
+    "requirements": false,
+    "design": false,
+    "tasks": false
+  },
+  "taskStatuses": {},
+  "createdAt": "2025-12-21T21:52:54.979Z",
+  "updatedAt": "2025-12-21T21:52:54.979Z"
+}
