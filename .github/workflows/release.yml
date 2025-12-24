@@ -1,0 +1,99 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.7)'
+        required: false
+        type: string
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+
+      - name: Build extension
+        run: yarn build
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Package extension
+        run: vsce package --out akira-${{ steps.get_version.outputs.VERSION }}.vsix
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event_name == 'push' && github.ref_name || format('v{0}', steps.get_version.outputs.VERSION) }}
+          release_name: Akira v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## Akira VSCode Extension v${{ steps.get_version.outputs.VERSION }}
+            
+            ### Installation
+            1. Download the `.vsix` file below
+            2. In VSCode, open the Extensions view (Ctrl+Shift+X)
+            3. Click the "..." menu in the Extensions view
+            4. Select "Install from VSIX..."
+            5. Choose the downloaded file
+            
+            ### What's Changed
+            See [CHANGELOG.md](https://github.com/Digital-Defiance/Akira/blob/main/CHANGELOG.md) for details.
+            
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.VERSION, 'alpha') || contains(steps.get_version.outputs.VERSION, 'beta') || contains(steps.get_version.outputs.VERSION, 'rc') }}
+
+      - name: Upload VSIX to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./akira-${{ steps.get_version.outputs.VERSION }}.vsix
+          asset_name: akira-${{ steps.get_version.outputs.VERSION }}.vsix
+          asset_content_type: application/octet-stream
+
+      - name: Upload VSIX as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: akira-vsix
+          path: ./akira-${{ steps.get_version.outputs.VERSION }}.vsix
+          retention-days: 90

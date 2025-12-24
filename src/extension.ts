@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { setOutputChannel, registerExtension, unregisterExtension } from "../vscode-shared-status-bar/src/index";
+import { setOutputChannel, registerExtension, unregisterExtension } from "@ai-capabilities-suite/vscode-shared-status-bar";
 import { SpecMCPClient } from "./mcp-client";
 import { SpecMCPServer } from "./mcp-server";
 import { registerChatParticipant } from "./chat-participant";
