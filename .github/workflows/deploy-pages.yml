@@ -39,9 +39,6 @@ jobs:
       - name: Add .nojekyll file
         run: touch ./showcase/dist/.nojekyll
 
-      - name: Copy CNAME
-        run: cp CNAME ./showcase/dist/CNAME
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
