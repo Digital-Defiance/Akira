@@ -3,7 +3,13 @@
  * Runs before all tests
  */
 
-import { vi } from "vitest";
+import { vi, afterEach } from "vitest";
+import { resetEventBus } from "./src/execution/event-bus";
+
+// Clean up event bus after each test to prevent memory leaks
+afterEach(() => {
+  resetEventBus();
+});
 
 // Mock @ai-capabilities-suite/vscode-shared-status-bar
 vi.mock("@ai-capabilities-suite/vscode-shared-status-bar", () => ({

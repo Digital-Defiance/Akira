@@ -149,6 +149,35 @@
         "title": "Validate Spec",
         "category": "Akira",
         "icon": "$(check)"
+      },
+      {
+        "command": "akira.autonomous.start",
+        "title": "Start Autonomous Execution",
+        "category": "Akira",
+        "icon": "$(run)"
+      },
+      {
+        "command": "akira.autonomous.pause",
+        "title": "Pause Autonomous Execution",
+        "category": "Akira",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "akira.autonomous.resume",
+        "title": "Resume Autonomous Execution",
+        "category": "Akira",
+        "icon": "$(play)"
+      },
+      {
+        "command": "akira.autonomous.stop",
+        "title": "Stop Autonomous Execution",
+        "category": "Akira",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "akira.showSessionMenu",
+        "title": "Show Autonomous Session Menu",
+        "category": "Akira"
       }
     ],
     "menus": {
@@ -194,6 +223,11 @@
           "command": "akira.validateSpec",
           "when": "view == specTreeView && viewItem == spec",
           "group": "actions@4"
+        },
+        {
+          "command": "akira.autonomous.start",
+          "when": "view == specTreeView && viewItem == spec",
+          "group": "actions@5"
         },
         {
           "command": "akira.approvePhase",

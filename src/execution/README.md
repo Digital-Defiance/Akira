@@ -1,0 +1,254 @@
+# Autonomous Execution Engine
+
+This module implements the autonomous spec execution system for the Akira VS Code extension.
+
+## Overview
+
+The execution engine enables fully autonomous execution of specs, where tasks can be run automatically with safety mechanisms, decision-making, and progress tracking.
+
+## Architecture
+
+### Core Components
+
+#### 1. **AutonomousExecutor** (`autonomous-executor.ts`)
+Main orchestrator that manages the entire execution lifecycle:
+- Starts/pauses/resumes/stops sessions
+- Loads tasks from tasks.md
+- Coordinates between all other components
+- Manages UI updates (status bar, notifications)
+
+#### 2. **SessionManager** (`session-manager.ts`)
+Manages session state persistence:
+- Creates and tracks execution sessions
+- Persists session state to markdown files (`.kiro/sessions/<id>/session.md`)
+- Maintains history, decisions, and logs
+- Tracks task completion and failures
+
+#### 3. **Scheduler** (`scheduler.ts`)
+Handles task queueing and concurrency control:
+- Priority-based task queue
+- Configurable concurrency (default: 3 concurrent tasks)
+- Worker pool management
+- Task routing to executor
+
+#### 4. **DecisionEngine** (`decision-engine.ts`)
+Evaluates whether tasks need execution:
+- Checks file existence
+- Runs command validation
+- Parses success criteria from task descriptions
+- Returns confidence scores (0-1) for task completion
+
+#### 5. **ExecutionEngine** (`execution-engine.ts`)
+Executes individual task actions:
+- File operations (create, modify, delete)
+- Command execution with retries
+- Approval flow for destructive operations
+- LLM integration (placeholder)
+
+#### 6. **StorageLayer** (`storage-layer.ts`)
+Atomic file operations:
+- Atomic writes (temp file + rename)
+- Write queue with debouncing
+- Directory management
+- Checkpoint cleanup
+
+#### 7. **EventBus** (`event-bus.ts`)
+Pub/sub system for execution events:
+- Session lifecycle events
+- Task progress events
+- Approval requests
+- Progress updates
+
+## Session Management
+
+### Session Structure
+
+Each session is stored in `.kiro/sessions/<session-id>/`:
+```
+session.md          # Main session state (YAML front-matter + task table)
+history.md          # Chronological event log
+decisions.md        # Task detection decisions
+api-calls.md        # External API/LLM call logs
+rollbacks.md        # Rollback history (future)
+```
+
+### Session Status States
+
+- **RUNNING**: Active execution
+- **PAUSED**: User-paused, can resume
+- **PAUSED_FOR_APPROVAL**: Waiting for destructive operation approval
+- **COMPLETED**: All tasks finished
+- **FAILED**: Execution failed
+- **STALE**: Paused for > 7 days
+
+## Task Detection
+
+The decision engine can automatically detect if a task is already complete by:
+
+1. **File Existence**: Check if required files exist
+2. **Command Success**: Run validation commands (build, test, lint)
+3. **Confidence Scoring**: Combine checks into 0-1 confidence score
+
+If confidence >= 0.8, the task is marked complete without re-execution.
+
+## Safety Mechanisms
+
+### 1. Execution Limits
+- Max concurrent tasks (default: 3)
+- Max tasks per session (default: 100)
+- Max file modifications (default: 50)
+
+### 2. Approval Policies
+- Destructive operations require confirmation
+- User approval via VS Code modal dialog
+- Session pauses until approval granted
+
+### 3. Retry & Backoff
+- Transient errors retry up to 3 times
+- Exponential backoff: 1s, 2s, 4s
+- Non-transient errors fail immediately
+
+### 4. Checkpoints (Future)
+- Phase-level snapshots
+- Rollback to safe states
+- Git integration when available
+
+## VS Code Integration
+
+### Commands
+
+- `akira.autonomous.start` - Start execution for a spec
+- `akira.autonomous.pause` - Pause the current session
+- `akira.autonomous.resume` - Resume a paused session
+- `akira.autonomous.stop` - Stop execution
+- `akira.showSessionMenu` - Quick actions menu
+
+### Status Bar
+
+Active sessions show:
+```
+$(sync~spin) Akira: 3/10
+```
+Click to open session menu with:
+- View Session Log
+- Pause/Resume Session
+- Stop Session
+- View Progress
+
+### Notifications
+
+Milestone notifications at:
+- 25% complete
+- 50% complete
+- 75% complete
+- 100% complete
+
+## Configuration
+
+Settings under `akira.autonomous`:
+
+```json
+{
+  "akira.autonomous.maxConcurrentTasks": 3,
+  "akira.autonomous.maxTasksPerSession": 100,
+  "akira.autonomous.maxFileModifications": 50,
+  "akira.autonomous.requireConfirmationForDestructiveOps": true,
+  "akira.autonomous.enableTaskDetection": true,
+  "akira.autonomous.phaseTimeout": 600000,
+  "akira.autonomous.checkpointRetention": 30
+}
+```
+
+## Usage Example
+
+1. **Create a spec with tasks**:
+   ```
+   @spec create my-feature "Description"
+   @spec my-feature continue  (generates design & tasks)
+   ```
+
+2. **Start autonomous execution**:
+   - Right-click spec in tree view → "Start Autonomous Execution"
+   - Or: Command Palette → "Akira: Start Autonomous Execution"
+
+3. **Monitor progress**:
+   - Status bar shows current progress
+   - Click status bar for session menu
+   - View session.md for detailed state
+
+4. **Task execution**:
+   - Tasks with success criteria may auto-complete (detection)
+   - Tasks without automated actions show guidance
+   - Manual implementation required, then mark complete
+
+5. **Control execution**:
+   - Pause: Stops scheduling new tasks
+   - Resume: Continues from current state
+   - Stop: Ends session gracefully
+
+## Event Flow
+
+```
+User triggers start
+  ↓
+AutonomousExecutor.startSession()
+  ↓
+SessionManager.createSession()
+  ↓
+Load tasks from tasks.md
+  ↓
+Scheduler.enqueueTasks()
+  ↓
+For each task:
+  DecisionEngine.evaluateTask()
+    ↓ (if confidence < 0.8)
+  ExecutionEngine.executePlan()
+    ↓
+  Update tasks.md checkbox
+    ↓
+  SessionManager.markTaskComplete()
+    ↓
+  EventBus.emit("taskCompleted")
+```
+
+## Future Enhancements
+
+- [ ] Full LLM integration for code generation
+- [ ] Checkpoint system with rollback
+- [ ] Git integration for safe reverts
+- [ ] Webhook support for external events
+- [ ] Checkpoint compaction
+- [ ] Telemetry & metrics
+- [ ] Plugin registry for custom providers
+
+## Testing
+
+Key test scenarios:
+
+1. **Session lifecycle**: Start, pause, resume, stop
+2. **Task detection**: File checks, command validation
+3. **Concurrency**: Multiple tasks executing
+4. **Error handling**: Retries, approval flow
+5. **Storage**: Atomic writes, session persistence
+
+## Implementation Status
+
+✅ Core execution engine
+✅ Session management
+✅ Scheduler with concurrency
+✅ Decision engine
+✅ Storage layer
+✅ Event bus
+✅ VS Code commands
+⚠️  Execution engine (manual guidance only - no LLM generation yet)
+❌ Checkpoint system
+❌ Git rollback
+❌ Full LLM integration for code gen
+
+## Notes
+
+- The execution engine provides the **infrastructure** for autonomous execution
+- Actual code generation requires LLM integration (planned)
+- Currently shows task guidance for manual implementation
+- Safe to use - includes approval flow for destructive operations
+- Session state persisted to markdown for transparency

@@ -28,6 +28,7 @@ import {
   runTest,
   debugTest,
 } from "./test-codelens-provider";
+import { getAutonomousExecutor, AutonomousExecutor } from "./execution";
 
 let mcpClient: SpecMCPClient | null = null;
 let mcpServer: SpecMCPServer | null = null;
@@ -36,6 +37,7 @@ let treeProvider: SpecTreeProvider | null = null;
 let taskCodeLensProvider: TaskCodeLensProvider | null = null;
 let testCodeLensProvider: TestCodeLensProvider | null = null;
 let outputChannel: vscode.LogOutputChannel | null = null;
+let autonomousExecutor: AutonomousExecutor | null = null;
 
 // Track specs currently being generated to prevent premature approvals
 const specsBeingGenerated = new Set<string>();
@@ -1374,6 +1376,214 @@ export async function activate(context: vscode.ExtensionContext) {
     );
   }
 
+  // Register Autonomous Execution Commands
+  outputChannel.info("Registering Autonomous Execution Commands...");
+  
+  // Start autonomous execution for a spec
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "akira.autonomous.start",
+      async (item?: any) => {
+        try {
+          const featureName = item?.featureName || (await vscode.window.showInputBox({
+            prompt: "Enter feature name to execute autonomously",
+            placeHolder: "my-feature",
+          }));
+
+          if (!featureName) {
+            return;
+          }
+
+          const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+          if (!workspaceRoot) {
+            vscode.window.showErrorMessage("No workspace folder found");
+            return;
+          }
+
+          // Initialize executor if needed
+          if (!autonomousExecutor) {
+            autonomousExecutor = getAutonomousExecutor(
+              workspaceRoot,
+              undefined,
+              undefined,
+              outputChannel
+            );
+          }
+
+          // Start the session
+          outputChannel.info(`Starting autonomous execution for: ${featureName}`);
+          const sessionId = await autonomousExecutor.startSession(featureName);
+          
+          vscode.window.showInformationMessage(
+            `🤖 Started autonomous execution for ${featureName} (Session: ${sessionId})`
+          );
+        } catch (error) {
+          outputChannel.error("Failed to start autonomous execution:", error);
+          vscode.window.showErrorMessage(
+            `Failed to start autonomous execution: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+    )
+  );
+
+  // Pause autonomous execution
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "akira.autonomous.pause",
+      async () => {
+        try {
+          if (!autonomousExecutor) {
+            vscode.window.showWarningMessage("No active autonomous session");
+            return;
+          }
+
+          await autonomousExecutor.pauseSession();
+          vscode.window.showInformationMessage("⏸️ Paused autonomous execution");
+        } catch (error) {
+          outputChannel?.error("Failed to pause autonomous execution:", error);
+          vscode.window.showErrorMessage(
+            `Failed to pause: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+    )
+  );
+
+  // Resume autonomous execution
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "akira.autonomous.resume",
+      async () => {
+        try {
+          const sessions = await vscode.window.showQuickPick(
+            autonomousExecutor ? getSessionsList(autonomousExecutor) : [],
+            {
+              placeHolder: "Select a paused session to resume",
+            }
+          );
+
+          if (!sessions || !autonomousExecutor) {
+            return;
+          }
+
+          await autonomousExecutor.resumeSession(sessions);
+          vscode.window.showInformationMessage("▶️ Resumed autonomous execution");
+        } catch (error) {
+          outputChannel?.error("Failed to resume autonomous execution:", error);
+          vscode.window.showErrorMessage(
+            `Failed to resume: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+    )
+  );
+
+  // Stop autonomous execution
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "akira.autonomous.stop",
+      async () => {
+        try {
+          if (!autonomousExecutor) {
+            vscode.window.showWarningMessage("No active autonomous session");
+            return;
+          }
+
+          const confirm = await vscode.window.showWarningMessage(
+            "Stop the current autonomous session?",
+            { modal: true },
+            "Stop"
+          );
+
+          if (confirm === "Stop") {
+            await autonomousExecutor.stopSession();
+            vscode.window.showInformationMessage("⏹️ Stopped autonomous execution");
+          }
+        } catch (error) {
+          outputChannel?.error("Failed to stop autonomous execution:", error);
+          vscode.window.showErrorMessage(
+            `Failed to stop: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+    )
+  );
+
+  // Show session menu (triggered by status bar click)
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "akira.showSessionMenu",
+      async () => {
+        if (!autonomousExecutor) {
+          vscode.window.showWarningMessage("No active autonomous session");
+          return;
+        }
+
+        const session = await autonomousExecutor.getCurrentSession();
+        if (!session) {
+          vscode.window.showWarningMessage("No active autonomous session");
+          return;
+        }
+
+        const options = [
+          { label: "$(file-text) View Session Log", value: "log" },
+          { label: "$(pause) Pause Session", value: "pause" },
+          { label: "$(play) Resume Session", value: "resume" },
+          { label: "$(debug-stop) Stop Session", value: "stop" },
+          { label: "$(graph) View Progress", value: "progress" },
+        ];
+
+        const selection = await vscode.window.showQuickPick(options, {
+          placeHolder: `Session: ${session.id} - ${session.featureName}`,
+        });
+
+        if (selection) {
+          switch (selection.value) {
+            case "log":
+              const sessionPath = path.join(
+                workspaceRoot || "",
+                ".kiro",
+                "sessions",
+                session.id,
+                "session.md"
+              );
+              const doc = await vscode.workspace.openTextDocument(sessionPath);
+              await vscode.window.showTextDocument(doc);
+              break;
+            case "pause":
+              await vscode.commands.executeCommand("akira.autonomous.pause");
+              break;
+            case "resume":
+              await vscode.commands.executeCommand("akira.autonomous.resume");
+              break;
+            case "stop":
+              await vscode.commands.executeCommand("akira.autonomous.stop");
+              break;
+            case "progress":
+              const progress = await autonomousExecutor.getProgress();
+              if (progress) {
+                vscode.window.showInformationMessage(
+                  `Progress: ${progress.completedTasks}/${progress.totalTasks} tasks (${progress.percentage}%) - Current: ${progress.currentTask || "None"}`
+                );
+              }
+              break;
+          }
+        }
+      }
+    )
+  );
+
+  outputChannel.info("✅ Autonomous Execution Commands registered");
+
   // Register configuration change listener
   const configListener = ConfigManager.onConfigurationChanged((newConfig) => {
     outputChannel?.info("Configuration changed:", newConfig);
@@ -1383,6 +1593,15 @@ export async function activate(context: vscode.ExtensionContext) {
   outputChannel.info("Configuration hot-reload enabled");
 
   outputChannel.info("Akira Spec Extension activated successfully");
+}
+
+/**
+ * Get list of sessions for quick pick (helper function)
+ */
+async function getSessionsList(executor: AutonomousExecutor): Promise<string[]> {
+  // This would need to be implemented to list available sessions
+  // For now, return empty array
+  return [];
 }
 
 /**
@@ -1422,6 +1641,12 @@ export async function deactivate() {
   if (statusBarManager) {
     await statusBarManager.dispose();
     statusBarManager = null;
+  }
+
+  // Cleanup Autonomous Executor
+  if (autonomousExecutor) {
+    autonomousExecutor.dispose();
+    autonomousExecutor = null;
   }
 }
 

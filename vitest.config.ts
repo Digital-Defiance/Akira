@@ -4,14 +4,27 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    pool: "forks",
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     include: ["src/**/*.test.ts"],
-    exclude: ["src/**/*.e2e.test.ts", "node_modules/**"],
+    exclude: [
+      "src/**/*.e2e.test.ts",
+      "node_modules/**",
+      // "src/execution/scheduler.test.ts", // Re-enabled - testing fix
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
       exclude: ["node_modules/", "dist/", "**/*.test.ts", "**/types.ts"],
     },
     setupFiles: ["./vitest.setup.ts"],
+    env: {
+      NODE_ENV: "test",
+    },
   },
   resolve: {
     alias: {

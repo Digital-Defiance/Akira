@@ -101,9 +101,9 @@ describe("VS Code Extension Integration Tests", () => {
 
       const views = packageJson.contributes.views;
       expect(views).toBeDefined();
-      expect(views.explorer).toBeDefined();
+      expect(views["akira-specs"]).toBeDefined();
 
-      const specTreeView = views.explorer.find(
+      const specTreeView = views["akira-specs"].find(
         (v: any) => v.id === "specTreeView"
       );
       expect(specTreeView).toBeDefined();
@@ -731,8 +731,8 @@ describe("VS Code Extension Integration Tests", () => {
         fs.readFileSync(path.join(process.cwd(), "package.json"), "utf-8")
       );
 
-      expect(packageJson.name).toBe("akira");
-      expect(packageJson.displayName).toBe("Akira");
+      expect(packageJson.name).toBe("ai-capabilities-suite-akira");
+      expect(packageJson.displayName).toBe("ACS Akira");
       expect(packageJson.description).toBeDefined();
       expect(packageJson.version).toBeDefined();
       expect(packageJson.publisher).toBeDefined();
