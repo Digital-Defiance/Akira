@@ -1,5 +1,5 @@
 {
-  "name": "ai-capabilities-suite-akira",
+  "name": "akira",
   "displayName": "ACS Akira",
   "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing",
   "version": "0.1.7",
@@ -314,12 +314,14 @@
     "compile": "tsc --noEmit",
     "package": "yarn build && npx vsce package",
     "publish": "yarn build && npx vsce publish",
-    "test": "vitest --run",
+    "test": "./run-tests.sh",
+    "test:integration": "NODE_OPTIONS='--max-old-space-size=8192' vitest --run src/execution-engine.integration.test.ts --pool=forks --poolOptions.forks.singleFork=false",
     "test:watch": "vitest",
     "test:e2e": "node ./dist/test/runTest.js",
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
+    "@fast-check/vitest": "^0.2.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.85.0",
@@ -329,7 +331,7 @@
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.19.8",
     "eslint": "^8.54.0",
-    "fast-check": "^3.15.0",
+    "fast-check": "3.22.0",
     "glob": "^13.0.0",
     "mocha": "^11.7.5",
     "typescript": "^5.3.2",

@@ -85,6 +85,14 @@ export class AutonomousExecutor {
       requireApprovalForDestructive: this.config.requireConfirmationForDestructiveOps,
       maxFileModifications: this.config.maxFileModifications,
       outputChannel: outputChannel,
+      reflectionConfig: {
+        enabled: true,
+        maxIterations: 3,
+        confidenceThreshold: 0.8,
+        enablePatternDetection: true,
+        pauseOnPersistentFailure: true,
+        persistentFailureThreshold: 2,
+      },
     });
     this.contextManager = new ContextManager(workspaceRoot);
 
@@ -222,7 +230,7 @@ export class AutonomousExecutor {
     const session = await this.sessionManager.getSession(sid);
     if (session) {
       const allComplete = session.tasks.every(
-        (t) => t.checkboxState === "COMPLETE" || this.isOptionalTask(t.id)
+        (t) => t.checkboxState === CheckboxState.COMPLETE || this.isOptionalTask(t.id)
       );
       await this.sessionManager.setStatus(
         sid,
@@ -246,7 +254,7 @@ export class AutonomousExecutor {
     try {
       // Update task status to in-progress
       await this.sessionManager.updateTask(sessionId, task.id, {
-        checkboxState: "IN_PROGRESS",
+        checkboxState: CheckboxState.IN_PROGRESS,
       });
 
       // Check if task detection is enabled
@@ -260,7 +268,7 @@ export class AutonomousExecutor {
           this.log(`Task ${task.id} already complete (confidence: ${decision.confidence})`);
           
           await this.sessionManager.markTaskComplete(sessionId, task.id);
-          await this.updateTaskCheckbox(sessionId, task.id, "COMPLETE");
+          await this.updateTaskCheckbox(sessionId, task.id, CheckboxState.COMPLETE);
           
           return { success: true };
         }
@@ -285,12 +293,28 @@ export class AutonomousExecutor {
         return { success: true };
       }
 
-      // Execute the plan
-      const result = await this.executionEngine.executePlan(plan, sessionId);
+      // Execute with reflection loop
+      const session = await this.sessionManager.getSession(sessionId);
+      if (!session) {
+        return { success: false, error: "Session not found" };
+      }
+
+      const result = await this.executionEngine.executeWithReflection(
+        task,
+        {
+          specPath: path.join(this.workspaceRoot, this.specDirectory, session.featureName),
+          sessionId,
+          phase: session.currentPhase,
+          previousTasks: session.tasks.filter(
+            (t) => t.checkboxState === CheckboxState.COMPLETE
+          ),
+        },
+        { maxIterations: 3 }
+      );
 
       if (result.success) {
         await this.sessionManager.markTaskComplete(sessionId, task.id);
-        await this.updateTaskCheckbox(sessionId, task.id, "COMPLETE");
+        await this.updateTaskCheckbox(sessionId, task.id, CheckboxState.COMPLETE);
         
         // Update progress
         const session = await this.sessionManager.getSession(sessionId);
@@ -304,14 +328,14 @@ export class AutonomousExecutor {
         }
       } else {
         await this.sessionManager.markTaskFailed(sessionId, task.id, result.error || "Unknown error");
-        await this.updateTaskCheckbox(sessionId, task.id, "FAILED");
+        await this.updateTaskCheckbox(sessionId, task.id, CheckboxState.FAILED);
       }
 
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       await this.sessionManager.markTaskFailed(sessionId, task.id, errorMessage);
-      await this.updateTaskCheckbox(sessionId, task.id, "FAILED");
+      await this.updateTaskCheckbox(sessionId, task.id, CheckboxState.FAILED);
       
       return { success: false, error: errorMessage };
     }
@@ -331,10 +355,10 @@ export class AutonomousExecutor {
 
     // Build context for LLM generation
     const context = {
-      specPath: session.specPath,
+      specPath: path.join(this.workspaceRoot, this.specDirectory, session.featureName),
       sessionId,
-      phase: session.phase,
-      previousTasks: session.tasks.filter((t) => t.state === CheckboxState.COMPLETE),
+      phase: session.currentPhase,
+      previousTasks: session.tasks.filter((t) => t.checkboxState === CheckboxState.COMPLETE),
     };
 
     // Try LLM generation if enabled
@@ -344,7 +368,7 @@ export class AutonomousExecutor {
         
         if (result.success) {
           // LLM generated a plan successfully
-          await getEventBus().emit("llmGenerated", sessionId, {
+          await getEventBus().emit("taskCompleted", sessionId, {
             taskId: task.id,
             actionsGenerated: result.filesCreated?.length || 0,
           });
@@ -442,9 +466,9 @@ export class AutonomousExecutor {
         if (match) {
           const indent = match[1];
           const optional = match[2] || "";
-          const checkbox = state === "COMPLETE" ? "x" :
-                          state === "IN_PROGRESS" ? "~" :
-                          state === "FAILED" ? "-" : " ";
+          const checkbox = state === CheckboxState.COMPLETE ? "x" :
+                          state === CheckboxState.IN_PROGRESS ? "~" :
+                          state === CheckboxState.FAILED ? "-" : " ";
           
           // Preserve the rest of the line after the checkbox
           const restOfLine = lines[i].substring(match[0].length);
@@ -467,9 +491,9 @@ export class AutonomousExecutor {
       id: task.id,
       title: task.description,
       rawLine: task.line,
-      checkboxState: task.status === "completed" ? "COMPLETE" as const :
-                     task.status === "in-progress" ? "IN_PROGRESS" as const :
-                     task.status === "failed" ? "FAILED" as const : "PENDING" as const,
+      checkboxState: task.status === "completed" ? CheckboxState.COMPLETE :
+                     task.status === "in-progress" ? CheckboxState.IN_PROGRESS :
+                     task.status === "failed" ? CheckboxState.FAILED : CheckboxState.PENDING,
       retryCount: 0,
     }));
   }
@@ -534,6 +558,105 @@ export class AutonomousExecutor {
       this.log(`✅ Context summarized: saved ${tokensSaved} tokens`);
     });
 
+    // Reflection started
+    const unsubReflectionStarted = this.eventBus.subscribe("reflectionStarted", async (event) => {
+      const { taskId, maxIterations } = event.data;
+      this.log(`🔄 Starting reflection loop for task ${taskId} (max ${maxIterations} iterations)`);
+      
+      // Update status bar to show reflection is active
+      const session = await this.sessionManager.getSession(event.sessionId);
+      if (session && this.statusBarItem) {
+        this.statusBarItem.text = `$(sync~spin) Akira: 🔄 Reflecting...`;
+        this.statusBarItem.tooltip = `Reflection loop active for task ${taskId}`;
+      }
+      
+      // Show notification
+      vscode.window.showInformationMessage(
+        `🔄 Starting adaptive execution for task ${taskId}`
+      );
+    });
+
+    // Reflection iteration
+    const unsubReflectionIteration = this.eventBus.subscribe("reflectionIteration", async (event) => {
+      const { taskId, iteration, maxIterations, success, confidence, reasoning } = event.data;
+      
+      // Update status bar with iteration progress
+      if (this.statusBarItem) {
+        this.statusBarItem.text = `$(sync~spin) Akira: 🔄 Iteration ${iteration}/${maxIterations}`;
+        this.statusBarItem.tooltip = `Task ${taskId}: Iteration ${iteration}/${maxIterations}\nConfidence: ${(confidence * 100).toFixed(0)}%`;
+      }
+      
+      // Log detailed progress
+      if (success) {
+        this.log(`🔄 Iteration ${iteration}/${maxIterations}: Trying approach...`);
+      } else {
+        this.log(`❌ Iteration ${iteration}/${maxIterations} failed. Analyzing and adjusting strategy...`);
+        this.log(`   Reason: ${reasoning}`);
+      }
+      
+      // Stream to output channel with user-friendly messages
+      if (this.outputChannel) {
+        if (iteration === 1) {
+          this.outputChannel.appendLine(`🔄 Iteration ${iteration}/${maxIterations}: Trying initial approach...`);
+        } else {
+          this.outputChannel.appendLine(`🔄 Iteration ${iteration}/${maxIterations}: Trying alternative approach...`);
+        }
+        
+        if (!success || confidence < 0.8) {
+          this.outputChannel.appendLine(`   ❌ Failed: ${reasoning}. Analyzing and adjusting strategy...`);
+        }
+      }
+    });
+
+    // Reflection completed
+    const unsubReflectionCompleted = this.eventBus.subscribe("reflectionCompleted", async (event) => {
+      const { taskId, success, iterationsUsed, maxIterations, finalConfidence, reason } = event.data;
+      
+      // Restore normal status bar
+      const session = await this.sessionManager.getSession(event.sessionId);
+      if (session) {
+        this.updateStatusBar(
+          event.sessionId,
+          session.featureName,
+          session.totalTasksCompleted,
+          session.tasks.length
+        );
+      }
+      
+      // Show completion message
+      if (success) {
+        const message = `✅ Success after ${iterationsUsed} iteration${iterationsUsed > 1 ? 's' : ''}!`;
+        this.log(message);
+        
+        if (this.outputChannel) {
+          this.outputChannel.appendLine(message);
+        }
+        
+        // Show notification for multi-iteration success
+        if (iterationsUsed > 1) {
+          vscode.window.showInformationMessage(
+            `✅ Task ${taskId} completed after ${iterationsUsed} iterations (confidence: ${(finalConfidence * 100).toFixed(0)}%)`
+          );
+        }
+      } else {
+        const message = `❌ Reflection loop completed without success after ${iterationsUsed} iterations`;
+        this.log(message);
+        this.log(`   Reason: ${reason || 'Unknown'}`);
+        
+        if (this.outputChannel) {
+          this.outputChannel.appendLine(message);
+          if (reason) {
+            this.outputChannel.appendLine(`   Reason: ${reason}`);
+          }
+        }
+        
+        // Show warning notification
+        vscode.window.showWarningMessage(
+          `⚠️ Task ${taskId} could not be completed automatically. ${reason || 'Manual intervention may be required.'}`
+        );
+      }
+    });
+
     // Store unsubscribe functions for cleanup
     this.eventUnsubscribers.push(
       unsubTaskCompleted, 
@@ -541,7 +664,10 @@ export class AutonomousExecutor {
       unsubSessionCompleted,
       unsubContextWarning,
       unsubContextSummarization,
-      unsubContextSummarized
+      unsubContextSummarized,
+      unsubReflectionStarted,
+      unsubReflectionIteration,
+      unsubReflectionCompleted
     );
   }
 

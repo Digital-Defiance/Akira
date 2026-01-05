@@ -144,7 +144,7 @@ describe("Scheduler", () => {
       expect(scheduler.getStatus().isRunning).toBe(false);
     });
 
-    it("should shutdown immediately and clear queue", () => {
+    it("should shutdown immediately and clear queue", async () => {
       const tasks: TaskRecord[] = Array.from({ length: 5 }, (_, i) => ({
         id: `${i + 1}`,
         title: `Task ${i + 1}`,
@@ -156,7 +156,7 @@ describe("Scheduler", () => {
       scheduler.enqueueTasks(tasks, "session-123");
       expect(scheduler.getStatus().queueLength).toBe(5);
 
-      scheduler.shutdown();
+      await scheduler.shutdown();
 
       expect(scheduler.getStatus().queueLength).toBe(0);
       expect(scheduler.getStatus().isRunning).toBe(false);

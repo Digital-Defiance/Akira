@@ -21,7 +21,9 @@ describe("LLMIntegrator", () => {
   });
 
   afterEach(() => {
-    llmIntegrator.dispose();
+    if (llmIntegrator && llmIntegrator["outputChannel"]) {
+      llmIntegrator.dispose();
+    }
   });
 
   describe("inferGenerationType", () => {
@@ -90,7 +92,7 @@ describe("LLMIntegrator", () => {
     it("should extract file creation from task description", () => {
       const task: TaskRecord = {
         id: "task-1",
-        title: "Create files",
+        title: 'Create file "src/index.ts"',
         rawLine: 1,
         checkboxState: CheckboxState.INCOMPLETE,
         retryCount: 0,
@@ -473,6 +475,403 @@ describe("LLMIntegrator", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("File not found");
+    });
+  });
+
+  describe("summarizeFailurePatterns", () => {
+    /**
+     * Property 11: Failure pattern summarization
+     * Feature: execution-reflection-loop, Property 11: For any re-planning attempt with multiple previous failures,
+     * the LLM prompt should include a summary of detected failure patterns.
+     * Validates: Requirements 3.4
+     */
+    it("should summarize failure patterns for any set of patterns", () => {
+      // Generate various failure patterns
+      const testCases = [
+        // Single pattern
+        [
+          {
+            errorMessage: "File not found",
+            occurrences: 1,
+            firstSeen: "2026-01-04T10:00:00Z",
+            lastSeen: "2026-01-04T10:00:00Z",
+          },
+        ],
+        // Multiple patterns with varying occurrences
+        [
+          {
+            errorMessage: "Module not found",
+            occurrences: 3,
+            firstSeen: "2026-01-04T10:00:00Z",
+            lastSeen: "2026-01-04T10:05:00Z",
+          },
+          {
+            errorMessage: "Syntax error",
+            occurrences: 1,
+            firstSeen: "2026-01-04T10:02:00Z",
+            lastSeen: "2026-01-04T10:02:00Z",
+          },
+        ],
+        // All recurring patterns
+        [
+          {
+            errorMessage: "Connection timeout",
+            occurrences: 2,
+            firstSeen: "2026-01-04T10:00:00Z",
+            lastSeen: "2026-01-04T10:03:00Z",
+          },
+          {
+            errorMessage: "Permission denied",
+            occurrences: 2,
+            firstSeen: "2026-01-04T10:01:00Z",
+            lastSeen: "2026-01-04T10:04:00Z",
+          },
+        ],
+      ];
+
+      for (const patterns of testCases) {
+        const summary = llmIntegrator["summarizeFailurePatterns"](patterns);
+
+        // Property: Summary should include all error messages
+        for (const pattern of patterns) {
+          expect(summary).toContain(pattern.errorMessage);
+        }
+
+        // Property: Summary should include occurrence counts for recurring patterns
+        const recurringPatterns = patterns.filter((p) => p.occurrences >= 2);
+        for (const pattern of recurringPatterns) {
+          expect(summary).toContain(`${pattern.occurrences}`);
+        }
+
+        // Property: Recurring patterns (occurrences >= 2) should be in "Recurring Issues" section
+        if (recurringPatterns.length > 0) {
+          expect(summary).toContain("Recurring Issues");
+          for (const pattern of recurringPatterns) {
+            expect(summary).toContain(pattern.errorMessage);
+            expect(summary).toContain(pattern.firstSeen);
+            expect(summary).toContain(pattern.lastSeen);
+          }
+        }
+
+        // Property: Single occurrence patterns should be in "Other Issues" section
+        const occasionalPatterns = patterns.filter((p) => p.occurrences === 1);
+        if (occasionalPatterns.length > 0) {
+          expect(summary).toContain("Other Issues");
+        }
+
+        // Property: If there are recurring patterns, analysis should be included
+        if (recurringPatterns.length > 0) {
+          expect(summary).toContain("Analysis");
+          expect(summary).toContain("systematic problem");
+        }
+      }
+    });
+
+    it("should handle empty failure patterns", () => {
+      const summary = llmIntegrator["summarizeFailurePatterns"]([]);
+      expect(summary).toBe("");
+    });
+  });
+
+  describe("buildDifferentApproachInstructions", () => {
+    /**
+     * Property 12: Different approach instruction
+     * Feature: execution-reflection-loop, Property 12: For any re-planning attempt,
+     * the LLM prompt should explicitly instruct the LLM to try a different approach than previous attempts.
+     * Validates: Requirements 3.5
+     */
+    it("should include explicit different approach instructions for any failure context", () => {
+      // Generate various failure contexts
+      const testCases = [
+        // Single attempt with file error
+        {
+          iteration: 1,
+          previousAttempts: [
+            {
+              iteration: 1,
+              timestamp: "2026-01-04T10:00:00Z",
+              actions: [],
+              result: { success: false, taskId: "task-1", error: "File not found" },
+              evaluationReason: "Failed",
+              confidence: 0.2,
+            },
+          ],
+          failurePatterns: [
+            {
+              errorMessage: "File not found",
+              occurrences: 1,
+              firstSeen: "2026-01-04T10:00:00Z",
+              lastSeen: "2026-01-04T10:00:00Z",
+            },
+          ],
+          environmentState: {
+            filesCreated: [],
+            filesModified: [],
+            commandOutputs: new Map(),
+            workingDirectoryState: [],
+          },
+        },
+        // Multiple attempts with command errors
+        {
+          iteration: 2,
+          previousAttempts: [
+            {
+              iteration: 1,
+              timestamp: "2026-01-04T10:00:00Z",
+              actions: [],
+              result: { success: false, taskId: "task-1", error: "Command failed" },
+              evaluationReason: "Failed",
+              confidence: 0.3,
+            },
+            {
+              iteration: 2,
+              timestamp: "2026-01-04T10:01:00Z",
+              actions: [],
+              result: { success: false, taskId: "task-1", error: "Command not found" },
+              evaluationReason: "Failed",
+              confidence: 0.2,
+            },
+          ],
+          failurePatterns: [
+            {
+              errorMessage: "Command failed",
+              occurrences: 2,
+              firstSeen: "2026-01-04T10:00:00Z",
+              lastSeen: "2026-01-04T10:01:00Z",
+            },
+          ],
+          environmentState: {
+            filesCreated: [],
+            filesModified: [],
+            commandOutputs: new Map(),
+            workingDirectoryState: [],
+          },
+        },
+        // Permission errors
+        {
+          iteration: 1,
+          previousAttempts: [
+            {
+              iteration: 1,
+              timestamp: "2026-01-04T10:00:00Z",
+              actions: [],
+              result: { success: false, taskId: "task-1", error: "Permission denied" },
+              evaluationReason: "Failed",
+              confidence: 0.1,
+            },
+          ],
+          failurePatterns: [
+            {
+              errorMessage: "Permission denied",
+              occurrences: 1,
+              firstSeen: "2026-01-04T10:00:00Z",
+              lastSeen: "2026-01-04T10:00:00Z",
+            },
+          ],
+          environmentState: {
+            filesCreated: [],
+            filesModified: [],
+            commandOutputs: new Map(),
+            workingDirectoryState: [],
+          },
+        },
+      ];
+
+      for (const failureContext of testCases) {
+        const instructions = llmIntegrator["buildDifferentApproachInstructions"](
+          failureContext
+        );
+
+        // Property: Instructions should explicitly mention trying a different approach
+        expect(instructions).toContain("Different Approach");
+        expect(instructions).toContain("different strategy");
+
+        // Property: Instructions should mention the number of previous attempts
+        expect(instructions).toContain(`${failureContext.previousAttempts.length}`);
+
+        // Property: Instructions should include "DO NOT" section
+        expect(instructions).toContain("DO NOT");
+        expect(instructions).toContain("Repeat the same actions");
+
+        // Property: Instructions should include "INSTEAD, CONSIDER" section
+        expect(instructions).toContain("INSTEAD, CONSIDER");
+        expect(instructions).toContain("Different file locations");
+        expect(instructions).toContain("Alternative commands");
+        expect(instructions).toContain("different implementation approach");
+
+        // Property: Instructions should include specific suggestions based on error types
+        const hasFileErrors = failureContext.failurePatterns.some((p) =>
+          p.errorMessage.toLowerCase().includes("file")
+        );
+        const hasCommandErrors = failureContext.failurePatterns.some((p) =>
+          p.errorMessage.toLowerCase().includes("command")
+        );
+        const hasPermissionErrors = failureContext.failurePatterns.some((p) =>
+          p.errorMessage.toLowerCase().includes("permission")
+        );
+
+        if (hasFileErrors) {
+          expect(instructions).toContain("File-related errors detected");
+        }
+
+        if (hasCommandErrors) {
+          expect(instructions).toContain("Command-related errors detected");
+        }
+
+        if (hasPermissionErrors) {
+          expect(instructions).toContain("Permission errors detected");
+        }
+      }
+    });
+
+    it("should handle minimal failure context", () => {
+      const minimalContext = {
+        iteration: 1,
+        previousAttempts: [
+          {
+            iteration: 1,
+            timestamp: "2026-01-04T10:00:00Z",
+            actions: [],
+            result: { success: false, taskId: "task-1" },
+            evaluationReason: "Failed",
+            confidence: 0.2,
+          },
+        ],
+        failurePatterns: [],
+        environmentState: {
+          filesCreated: [],
+          filesModified: [],
+          commandOutputs: new Map(),
+          workingDirectoryState: [],
+        },
+      };
+
+      const instructions = llmIntegrator["buildDifferentApproachInstructions"](
+        minimalContext
+      );
+
+      // Should still include core instructions
+      expect(instructions).toContain("Different Approach");
+      expect(instructions).toContain("DO NOT");
+      expect(instructions).toContain("INSTEAD, CONSIDER");
+    });
+  });
+
+  describe("buildImplementationPrompt with failure context", () => {
+    it("should include failure pattern summary when patterns exist", () => {
+      const task: TaskRecord = {
+        id: "task-1",
+        title: "Implement feature",
+        rawLine: 1,
+        checkboxState: CheckboxState.INCOMPLETE,
+        retryCount: 0,
+      };
+
+      const context = {
+        specPath: "/test/spec.md",
+        sessionId: "session-1",
+        phase: 3,
+        previousTasks: [],
+      };
+
+      const failureContext = {
+        iteration: 2,
+        previousAttempts: [
+          {
+            iteration: 1,
+            timestamp: "2026-01-04T10:00:00Z",
+            actions: [
+              { type: "file-write" as const, target: "test.ts", content: "code" },
+            ],
+            result: { success: false, taskId: "task-1", error: "Syntax error" },
+            evaluationReason: "Code has syntax errors",
+            confidence: 0.3,
+          },
+        ],
+        failurePatterns: [
+          {
+            errorMessage: "Syntax error in test.ts",
+            occurrences: 2,
+            firstSeen: "2026-01-04T10:00:00Z",
+            lastSeen: "2026-01-04T10:01:00Z",
+          },
+        ],
+        environmentState: {
+          filesCreated: ["test.ts"],
+          filesModified: [],
+          commandOutputs: new Map(),
+          workingDirectoryState: [],
+        },
+      };
+
+      const prompt = llmIntegrator["buildImplementationPrompt"](
+        task,
+        context,
+        failureContext
+      );
+
+      // Should include failure patterns section
+      expect(prompt).toContain("Failure Patterns Detected");
+      expect(prompt).toContain("Syntax error in test.ts");
+      expect(prompt).toContain("occurred 2 times");
+
+      // Should include different approach instructions
+      expect(prompt).toContain("Different Approach");
+      expect(prompt).toContain("DO NOT");
+      expect(prompt).toContain("INSTEAD, CONSIDER");
+    });
+
+    it("should include environment state when files were created/modified", () => {
+      const task: TaskRecord = {
+        id: "task-1",
+        title: "Implement feature",
+        rawLine: 1,
+        checkboxState: CheckboxState.INCOMPLETE,
+        retryCount: 0,
+      };
+
+      const context = {
+        specPath: "/test/spec.md",
+        sessionId: "session-1",
+        phase: 3,
+        previousTasks: [],
+      };
+
+      const failureContext = {
+        iteration: 1,
+        previousAttempts: [
+          {
+            iteration: 1,
+            timestamp: "2026-01-04T10:00:00Z",
+            actions: [],
+            result: { success: false, taskId: "task-1" },
+            evaluationReason: "Failed",
+            confidence: 0.2,
+          },
+        ],
+        failurePatterns: [],
+        environmentState: {
+          filesCreated: ["src/new-file.ts", "src/another.ts"],
+          filesModified: ["src/existing.ts"],
+          commandOutputs: new Map(),
+          workingDirectoryState: [],
+        },
+      };
+
+      const prompt = llmIntegrator["buildImplementationPrompt"](
+        task,
+        context,
+        failureContext
+      );
+
+      // Should include files created
+      expect(prompt).toContain("Files Created in Previous Attempts");
+      expect(prompt).toContain("src/new-file.ts");
+      expect(prompt).toContain("src/another.ts");
+
+      // Should include files modified
+      expect(prompt).toContain("Files Modified in Previous Attempts");
+      expect(prompt).toContain("src/existing.ts");
     });
   });
 

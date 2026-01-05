@@ -3,21 +3,24 @@
  * Handles reading and managing extension configuration settings
  */
 
-// Conditionally import vscode only when available
-// Use eval to prevent bundler from processing the require
-let vscode: typeof import("vscode") | undefined;
-try {
-  const requireFunc = eval("require");
-  vscode = requireFunc("vscode");
-} catch {
-  // vscode is not available in standalone mode
-  vscode = undefined;
-}
+// Import vscode - will be mocked in tests
+import * as vscode from "vscode";
 
 export interface ExtensionConfig {
   specDirectory: string;
   strictMode: boolean;
   propertyTestIterations: number;
+}
+
+/**
+ * Check if vscode is available
+ */
+function isVSCodeAvailable(): boolean {
+  try {
+    return !!(vscode && vscode.workspace);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -31,7 +34,7 @@ export class ConfigManager {
    * Get the current extension configuration
    */
   public static getConfig(): ExtensionConfig {
-    if (vscode) {
+    if (isVSCodeAvailable()) {
       const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
       return {
         specDirectory: config.get<string>("specDirectory", ".kiro/specs"),
@@ -77,7 +80,7 @@ export class ConfigManager {
   public static onConfigurationChanged(
     callback: (config: ExtensionConfig) => void
   ): { dispose: () => void } {
-    if (!vscode) {
+    if (!isVSCodeAvailable()) {
       // Return a no-op disposable when vscode is not available
       return { dispose: () => {} };
     }

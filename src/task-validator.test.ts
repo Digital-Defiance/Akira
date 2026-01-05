@@ -38,9 +38,11 @@ describe("Task Validator", () => {
 
       const criteria = parseSuccessCriteria(taskContent, lines);
 
-      expect(criteria).toHaveLength(1);
+      // The inline parser splits "builds and lint passes" into 2 criteria
+      expect(criteria).toHaveLength(2);
       expect(criteria[0].type).toBe("command-runs");
       expect(criteria[0].validation).toBe("npm run build");
+      expect(criteria[1].type).toBe("lint-passes");
     });
 
     it("should parse file existence criteria", () => {
@@ -200,8 +202,8 @@ describe("Task Validator", () => {
       const content = `# Tasks
 
 - [ ] 1.1 Initialize repository
-  - Files: package.json, tsconfig.json
-  - Success criteria: files exist
+  - Create package.json, tsconfig.json
+  - Success criteria: package.json and tsconfig.json files exist
 `;
       fs.writeFileSync(tasksFile, content);
 

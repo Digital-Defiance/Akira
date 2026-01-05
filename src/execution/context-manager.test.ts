@@ -3,11 +3,21 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { test } from "@fast-check/vitest";
+import * as fc from "fast-check";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { ContextManager, ContextEntry } from "./context-manager";
 import { getEventBus, resetEventBus } from "./event-bus";
+import {
+  AttemptRecord,
+  ExecutionAction,
+  ExecutionResult,
+  CheckboxState,
+  TaskRecord,
+  FailurePattern,
+} from "./types";
 
 describe("ContextManager", () => {
   let tempDir: string;
@@ -179,11 +189,12 @@ describe("ContextManager", () => {
     });
 
     it("should retain recent entries after summarization", async () => {
-      // Add enough entries to trigger summarization
-      for (let i = 0; i < 10; i++) {
+      // Add enough entries to trigger summarization (need to reach 80% of 1000 tokens = 800 tokens)
+      // Each entry ~200 characters = ~50 tokens, so 16 entries = 800 tokens
+      for (let i = 0; i < 16; i++) {
         await contextManager.addEntry({
           type: "user",
-          content: `Message ${i}: ${"a".repeat(150)}`,
+          content: `Message ${i}: ${"a".repeat(200)}`,
         });
       }
 
@@ -195,21 +206,22 @@ describe("ContextManager", () => {
 
     it("should reduce token count after summarization", async () => {
       // Track token count before summarization
-      for (let i = 0; i < 8; i++) {
+      // Add entries to reach ~75% (750 tokens)
+      for (let i = 0; i < 15; i++) {
         await contextManager.addEntry({
           type: "user",
-          content: "a".repeat(150),
+          content: "a".repeat(200),
         });
       }
 
       const statsBeforeSummarization = contextManager.getStats();
       const tokensBeforeSummarization = statsBeforeSummarization.currentTokens;
 
-      // Trigger summarization
-      for (let i = 0; i < 3; i++) {
+      // Trigger summarization by adding more entries to reach 80%
+      for (let i = 0; i < 2; i++) {
         await contextManager.addEntry({
           type: "user",
-          content: "a".repeat(150),
+          content: "a".repeat(200),
         });
       }
 
@@ -226,11 +238,11 @@ describe("ContextManager", () => {
         summaryEvent = event;
       });
 
-      // Add entries to trigger summarization
-      for (let i = 0; i < 10; i++) {
+      // Add entries to trigger summarization (need 80% of 1000 = 800 tokens)
+      for (let i = 0; i < 16; i++) {
         await contextManager.addEntry({
           type: "user",
-          content: "a".repeat(150),
+          content: "a".repeat(200),
         });
       }
 
@@ -291,11 +303,11 @@ describe("ContextManager", () => {
     });
 
     it("should save summary to separate file", async () => {
-      // Trigger summarization
-      for (let i = 0; i < 10; i++) {
+      // Trigger summarization (need 80% of 1000 = 800 tokens)
+      for (let i = 0; i < 16; i++) {
         await contextManager.addEntry({
           type: "user",
-          content: "a".repeat(150),
+          content: "a".repeat(200),
         });
       }
 
@@ -353,11 +365,11 @@ describe("ContextManager", () => {
     });
 
     it("should allow manual summarization trigger", async () => {
-      // Add several entries
+      // Add several entries with substantial content
       for (let i = 0; i < 10; i++) {
         await contextManager.addEntry({
           type: "user",
-          content: `Message ${i}`,
+          content: `Message ${i}: ${"a".repeat(100)}`,
         });
       }
 
@@ -369,6 +381,378 @@ describe("ContextManager", () => {
       expect(summary.entriesSummarized).toBeGreaterThan(0);
       expect(summary.retainedEntries).toBe(2); // Our config retains 2
       expect(summary.summaryTokenCount).toBeLessThan(summary.originalTokenCount);
+    });
+  });
+
+  describe("failure tracking", () => {
+    beforeEach(async () => {
+      await contextManager.initialize("test-session-1");
+    });
+
+    describe("Property 13: Attempt tracking", () => {
+      test.prop([
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.integer({ min: 1, max: 10 }),
+        fc.array(
+          fc.record({
+            type: fc.constantFrom("file-write", "file-delete", "command", "llm-generate"),
+            target: fc.string({ minLength: 1, maxLength: 50 }),
+          }),
+          { minLength: 1, maxLength: 5 }
+        ),
+        fc.boolean(),
+        fc.string({ minLength: 0, maxLength: 100 }),
+        fc.float({ min: 0, max: Math.fround(1) }).filter(n => !isNaN(n)),
+      ])(
+        "should track any execution attempt with timestamp, actions, outcome, and evaluation result",
+        async (sessionId, taskId, iteration, actions, success, evaluationReason, confidence) => {
+          /**
+           * Feature: execution-reflection-loop, Property 13: Attempt tracking
+           * Validates: Requirements 4.1
+           */
+          // Create a fresh context manager for this test
+          const testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "context-test-prop13-"));
+          const testContextManager = new ContextManager(testTempDir);
+          await testContextManager.initialize(sessionId);
+
+          const timestamp = new Date().toISOString();
+          const attempt: AttemptRecord = {
+            iteration,
+            timestamp,
+            actions: actions as ExecutionAction[],
+            result: {
+              success,
+              taskId,
+              error: success ? undefined : "Test error",
+            },
+            evaluationReason,
+            confidence,
+          };
+
+          await testContextManager.trackAttempt(sessionId, taskId, attempt);
+
+          const history = await testContextManager.getFailureHistory(sessionId, taskId);
+          
+          expect(history).toHaveLength(1);
+          expect(history[0].iteration).toBe(iteration);
+          expect(history[0].timestamp).toBe(timestamp);
+          expect(history[0].actions).toEqual(actions);
+          expect(history[0].result.success).toBe(success);
+          expect(history[0].evaluationReason).toBe(evaluationReason);
+          expect(history[0].confidence).toBe(confidence);
+
+          // Cleanup
+          testContextManager.dispose();
+          fs.rmSync(testTempDir, { recursive: true, force: true });
+        },
+        { numRuns: 100 }
+      );
+    });
+
+    describe("Property 14: Failure history persistence", () => {
+      test.prop([
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.array(
+          fc.record({
+            iteration: fc.integer({ min: 1, max: 10 }),
+            errorMessage: fc.string({ minLength: 1, maxLength: 50 }),
+            confidence: fc.float({ min: 0, max: Math.fround(0.79) }).filter(n => !isNaN(n)),
+          }),
+          { minLength: 1, maxLength: 5 }
+        ),
+      ])(
+        "should maintain a queryable history of failure reasons for any task with failed attempts",
+        async (sessionId, taskId, failures) => {
+          /**
+           * Feature: execution-reflection-loop, Property 14: Failure history persistence
+           * Validates: Requirements 4.2, 4.3
+           */
+          // Create a fresh context manager for this test
+          const testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "context-test-prop14-"));
+          const testContextManager = new ContextManager(testTempDir);
+          await testContextManager.initialize(sessionId);
+
+          // Track multiple failed attempts
+          for (const failure of failures) {
+            const attempt: AttemptRecord = {
+              iteration: failure.iteration,
+              timestamp: new Date().toISOString(),
+              actions: [{ type: "command", target: "test" }],
+              result: {
+                success: false,
+                taskId,
+                error: failure.errorMessage,
+              },
+              evaluationReason: "Task incomplete",
+              confidence: failure.confidence,
+            };
+
+            await testContextManager.trackAttempt(sessionId, taskId, attempt);
+          }
+
+          // Query the history
+          const history = await testContextManager.getFailureHistory(sessionId, taskId);
+          
+          expect(history).toHaveLength(failures.length);
+          
+          // Verify all failures are present
+          for (let i = 0; i < failures.length; i++) {
+            expect(history[i].result.error).toBe(failures[i].errorMessage);
+            expect(history[i].confidence).toBe(failures[i].confidence);
+          }
+
+          // Cleanup
+          testContextManager.dispose();
+          fs.rmSync(testTempDir, { recursive: true, force: true });
+        },
+        { numRuns: 100 }
+      );
+    });
+
+    describe("Property 15: File modification tracking", () => {
+      test.prop([
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.array(fc.string({ minLength: 1, maxLength: 30 }), { minLength: 1, maxLength: 10 }),
+        fc.array(fc.string({ minLength: 1, maxLength: 30 }), { minLength: 0, maxLength: 10 }),
+      ])(
+        "should track which files were modified for any execution attempt that modifies files",
+        async (sessionId, taskId, filesCreated, filesModified) => {
+          /**
+           * Feature: execution-reflection-loop, Property 15: File modification tracking
+           * Validates: Requirements 4.4
+           */
+          // Create a fresh context manager for this test
+          const testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "context-test-prop15-"));
+          const testContextManager = new ContextManager(testTempDir);
+          await testContextManager.initialize(sessionId);
+
+          const attempt: AttemptRecord = {
+            iteration: 1,
+            timestamp: new Date().toISOString(),
+            actions: [{ type: "file-write", target: "test.ts" }],
+            result: {
+              success: true,
+              taskId,
+              filesCreated,
+              filesModified,
+            },
+            evaluationReason: "Task complete",
+            confidence: 0.9,
+          };
+
+          await testContextManager.trackAttempt(sessionId, taskId, attempt);
+
+          const history = await testContextManager.getFailureHistory(sessionId, taskId);
+          
+          expect(history).toHaveLength(1);
+          expect(history[0].result.filesCreated).toEqual(filesCreated);
+          expect(history[0].result.filesModified).toEqual(filesModified);
+
+          // Cleanup
+          testContextManager.dispose();
+          fs.rmSync(testTempDir, { recursive: true, force: true });
+        },
+        { numRuns: 100 }
+      );
+    });
+
+    describe("Property 16: Context persistence", () => {
+      test.prop([
+        fc.string({ minLength: 1, maxLength: 20 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)),
+        fc.string({ minLength: 1, maxLength: 20 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)),
+        fc.array(
+          fc.record({
+            iteration: fc.integer({ min: 1, max: 5 }),
+            errorMessage: fc.string({ minLength: 1, maxLength: 50 }),
+          }),
+          { minLength: 1, maxLength: 3 }
+        ),
+      ])(
+        "should persist any execution context to session storage and be recoverable",
+        async (sessionId, taskId, attempts) => {
+          /**
+           * Feature: execution-reflection-loop, Property 16: Context persistence
+           * Validates: Requirements 4.5
+           */
+          // Create a fresh context manager for this test
+          const testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "context-test-prop16-"));
+          const testContextManager = new ContextManager(testTempDir);
+          await testContextManager.initialize(sessionId);
+
+          // Track attempts
+          for (const attemptData of attempts) {
+            const attempt: AttemptRecord = {
+              iteration: attemptData.iteration,
+              timestamp: new Date().toISOString(),
+              actions: [{ type: "command", target: "test" }],
+              result: {
+                success: false,
+                taskId,
+                error: attemptData.errorMessage,
+              },
+              evaluationReason: "Task incomplete",
+              confidence: 0.5,
+            };
+
+            await testContextManager.trackAttempt(sessionId, taskId, attempt);
+          }
+
+          // Create a new context manager to simulate recovery
+          const newContextManager = new ContextManager(testTempDir);
+          await newContextManager.initialize(sessionId);
+
+          // Verify data is recoverable
+          const recoveredHistory = await newContextManager.getFailureHistory(sessionId, taskId);
+          
+          expect(recoveredHistory).toHaveLength(attempts.length);
+          
+          for (let i = 0; i < attempts.length; i++) {
+            expect(recoveredHistory[i].result.error).toBe(attempts[i].errorMessage);
+            expect(recoveredHistory[i].iteration).toBe(attempts[i].iteration);
+          }
+
+          // Cleanup
+          newContextManager.dispose();
+          testContextManager.dispose();
+          fs.rmSync(testTempDir, { recursive: true, force: true });
+        },
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe("failure pattern detection", () => {
+    beforeEach(async () => {
+      await contextManager.initialize("test-session-1");
+    });
+
+    describe("Property 21: Persistent failure detection", () => {
+      test.prop([
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.string({ minLength: 1, maxLength: 20 }),
+        fc.string({ minLength: 1, maxLength: 50 }),
+        fc.integer({ min: 2, max: 10 }),
+      ])(
+        "should recognize any sequence of 2+ consecutive iterations with the same error message as a persistent failure",
+        async (sessionId, taskId, errorMessage, consecutiveCount) => {
+          /**
+           * Feature: execution-reflection-loop, Property 21: Persistent failure detection
+           * Validates: Requirements 6.1
+           */
+          // Create a fresh context manager for this test
+          const testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "context-test-prop21-"));
+          const testContextManager = new ContextManager(testTempDir);
+          await testContextManager.initialize(sessionId);
+
+          // Track consecutive attempts with the same error
+          for (let i = 0; i < consecutiveCount; i++) {
+            const attempt: AttemptRecord = {
+              iteration: i + 1,
+              timestamp: new Date().toISOString(),
+              actions: [{ type: "command", target: "test" }],
+              result: {
+                success: false,
+                taskId,
+                error: errorMessage,
+              },
+              evaluationReason: "Task incomplete",
+              confidence: 0.3,
+            };
+
+            await testContextManager.trackAttempt(sessionId, taskId, attempt);
+          }
+
+          // Detect patterns
+          const patterns = await testContextManager.detectFailurePatterns(sessionId, taskId);
+          
+          // Should detect the persistent failure
+          expect(patterns.length).toBeGreaterThan(0);
+          
+          // Find the pattern with our error message
+          const persistentPattern = patterns.find(p => p.errorMessage === errorMessage);
+          expect(persistentPattern).toBeDefined();
+          expect(persistentPattern!.occurrences).toBe(consecutiveCount);
+          expect(persistentPattern!.occurrences).toBeGreaterThanOrEqual(2);
+
+          // Cleanup
+          testContextManager.dispose();
+          fs.rmSync(testTempDir, { recursive: true, force: true });
+        },
+        { numRuns: 100 }
+      );
+    });
+
+    describe("Property 24: Session-level pattern tracking", () => {
+      test.prop([
+        fc.string({ minLength: 1, maxLength: 20 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)),
+        fc.uniqueArray(
+          fc.record({
+            taskId: fc.string({ minLength: 1, maxLength: 20 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)),
+            errorMessage: fc.string({ minLength: 1, maxLength: 50 }),
+            occurrences: fc.integer({ min: 1, max: 5 }),
+          }),
+          { minLength: 2, maxLength: 5, selector: (item) => item.taskId }
+        ),
+      ])(
+        "should track failure patterns across all tasks in any session to identify systemic issues",
+        async (sessionId, taskFailures) => {
+          /**
+           * Feature: execution-reflection-loop, Property 24: Session-level pattern tracking
+           * Validates: Requirements 6.5
+           */
+          // Create a fresh context manager for this test
+          const testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), "context-test-prop24-"));
+          const testContextManager = new ContextManager(testTempDir);
+          await testContextManager.initialize(sessionId);
+
+          // Track failures across multiple tasks
+          for (const taskFailure of taskFailures) {
+            for (let i = 0; i < taskFailure.occurrences; i++) {
+              const attempt: AttemptRecord = {
+                iteration: i + 1,
+                timestamp: new Date().toISOString(),
+                actions: [{ type: "command", target: "test" }],
+                result: {
+                  success: false,
+                  taskId: taskFailure.taskId,
+                  error: taskFailure.errorMessage,
+                },
+                evaluationReason: "Task incomplete",
+                confidence: 0.3,
+              };
+
+              await testContextManager.trackAttempt(sessionId, taskFailure.taskId, attempt);
+            }
+          }
+
+          // Collect patterns from all tasks
+          const allPatterns: FailurePattern[] = [];
+          for (const taskFailure of taskFailures) {
+            const patterns = await testContextManager.detectFailurePatterns(sessionId, taskFailure.taskId);
+            allPatterns.push(...patterns);
+          }
+
+          // Should have detected patterns for each task
+          expect(allPatterns.length).toBeGreaterThanOrEqual(taskFailures.length);
+          
+          // Verify each task's pattern is tracked
+          for (const taskFailure of taskFailures) {
+            const taskPatterns = await testContextManager.detectFailurePatterns(sessionId, taskFailure.taskId);
+            const pattern = taskPatterns.find(p => p.errorMessage === taskFailure.errorMessage);
+            
+            expect(pattern).toBeDefined();
+            expect(pattern!.occurrences).toBe(taskFailure.occurrences);
+          }
+
+          // Cleanup
+          testContextManager.dispose();
+          fs.rmSync(testTempDir, { recursive: true, force: true });
+        },
+        { numRuns: 100 }
+      );
     });
   });
 });

@@ -28,7 +28,13 @@ export type SessionStatus =
 /**
  * Task checkbox state
  */
-export type CheckboxState = "PENDING" | "COMPLETE" | "FAILED" | "IN_PROGRESS";
+export enum CheckboxState {
+  PENDING = "PENDING",
+  COMPLETE = "COMPLETE",
+  FAILED = "FAILED",
+  IN_PROGRESS = "IN_PROGRESS",
+  INCOMPLETE = "INCOMPLETE",
+}
 
 /**
  * Success criteria types
@@ -211,7 +217,10 @@ export type ExecutionEventType =
   | "contextInitialized"
   | "contextLimitWarning"
   | "contextSummarizationTriggered"
-  | "contextSummarized";
+  | "contextSummarized"
+  | "reflectionStarted"
+  | "reflectionIteration"
+  | "reflectionCompleted";
 
 /**
  * Event payload
@@ -258,4 +267,100 @@ export interface ProgressInfo {
   currentTask?: string;
   percentage: number;
   estimatedTimeRemaining?: number;
+}
+
+/**
+ * Failure context for reflection loop
+ */
+export interface FailureContext {
+  iteration: number;
+  previousAttempts: AttemptRecord[];
+  failurePatterns: FailurePattern[];
+  environmentState: EnvironmentState;
+  userGuidance?: string;
+}
+
+/**
+ * Record of a single execution attempt
+ */
+export interface AttemptRecord {
+  iteration: number;
+  timestamp: string;
+  actions: ExecutionAction[];
+  result: ExecutionResult;
+  evaluationReason: string;
+  confidence: number;
+}
+
+/**
+ * Detected failure pattern
+ */
+export interface FailurePattern {
+  errorMessage: string;
+  occurrences: number;
+  firstSeen: string;
+  lastSeen: string;
+}
+
+/**
+ * Environment state snapshot
+ */
+export interface EnvironmentState {
+  filesCreated: string[];
+  filesModified: string[];
+  commandOutputs: Map<string, string>;
+  workingDirectoryState: string[];
+}
+
+/**
+ * Reflection loop configuration (full config)
+ */
+export interface ReflectionConfig {
+  enabled: boolean;
+  maxIterations: number;
+  confidenceThreshold: number;
+  enablePatternDetection: boolean;
+  pauseOnPersistentFailure: boolean;
+  persistentFailureThreshold: number;
+}
+
+/**
+ * Reflection loop options (partial config for method calls)
+ */
+export interface ReflectionOptions {
+  maxIterations?: number;
+  confidenceThreshold?: number;
+  enabled?: boolean;
+  persistentFailureThreshold?: number;
+  pauseOnPersistentFailure?: boolean;
+  userGuidance?: string;
+}
+
+/**
+ * Detailed evaluation result
+ */
+export interface DetailedEvaluation extends DecisionResult {
+  criteriaResults: CriterionResult[];
+  missingElements: string[];
+  suggestions: string[];
+}
+
+/**
+ * Result for a single criterion
+ */
+export interface CriterionResult {
+  criterion: SuccessCriteria;
+  met: boolean;
+  reason: string;
+  evidence?: string;
+}
+
+/**
+ * Reflection statistics for a session
+ */
+export interface ReflectionStats {
+  totalReflections: number;
+  averageIterations: number;
+  successRate: number;
+  commonFailurePatterns: FailurePattern[];
 }

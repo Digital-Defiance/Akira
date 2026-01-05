@@ -15,7 +15,7 @@ Vitest's test collection phase has issues with certain async test patterns invol
 ## Investigation Process
 
 1. Created `scheduler-simple.test.ts` with minimal tests → ✅ Passed
-2. Added beforeEach pattern → ✅ Passed  
+2. Added beforeEach pattern → ✅ Passed
 3. Added first test with `startProcessing()` → ✅ Passed
 4. Added "concurrency control" describe block with async tests → ❌ Hung
 5. Identified specific test: "should respect max concurrency" causes the hang
@@ -25,17 +25,19 @@ Vitest's test collection phase has issues with certain async test patterns invol
 
 ```typescript
 it("should respect max concurrency", async () => {
-  scheduler.setExecutor(async () => { /* ... */ });
+  scheduler.setExecutor(async () => {
+    /* ... */
+  });
   scheduler.enqueueTasks(tasks, "session-123");
-  
+
   // This causes issues during vitest collection
   scheduler.startProcessing(); // Infinite loop
-  
+
   // Wait for completion
   while (completed < 10 && Date.now() < maxWait) {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  
+
   await scheduler.stopProcessing();
 });
 ```
@@ -45,17 +47,23 @@ it("should respect max concurrency", async () => {
 Skip the two problematic async tests:
 
 ```typescript
-it.skip("should respect max concurrency", async () => { /* ... */ });
-it.skip("should start and stop processing", async () => { /* ... */ });
+it.skip("should respect max concurrency", async () => {
+  /* ... */
+});
+it.skip("should start and stop processing", async () => {
+  /* ... */
+});
 ```
 
 ## Test Results
 
 **Before fix:**
+
 - Scheduler tests: ❌ Hang during collection (timeout after 30s)
 - Other tests: ✅ 150 passed
 
 **After fix:**
+
 - Scheduler tests: ✅ 7 passed | 2 skipped
 - Other tests: ✅ 150 passed
 - Total: **157 tests passing** (7 + 150)
@@ -63,7 +71,7 @@ it.skip("should start and stop processing", async () => { /* ... */ });
 ## Alternative Approaches Attempted
 
 1. ❌ Removing unused `vi` import - no effect
-2. ❌ Adding afterEach cleanup - no effect  
+2. ❌ Adding afterEach cleanup - no effect
 3. ❌ Changing pool from forks to threads - no effect
 4. ❌ Using `--no-isolate` flag - no effect
 5. ✅ Skipping problematic async tests - **WORKS**

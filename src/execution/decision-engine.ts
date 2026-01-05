@@ -10,6 +10,9 @@ import {
   TaskRecord,
   DecisionResult,
   SuccessCriteria,
+  DetailedEvaluation,
+  CriterionResult,
+  ExecutionResult,
 } from "./types";
 
 /**
@@ -39,6 +42,169 @@ export class DecisionEngine {
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
+  }
+
+  /**
+   * Evaluate task with detailed per-criterion results
+   * Used by reflection loop for comprehensive evaluation
+   */
+  async evaluateWithDetails(
+    task: TaskRecord,
+    executionResult?: ExecutionResult
+  ): Promise<DetailedEvaluation> {
+    const criteria = task.successCriteria || [];
+
+    if (criteria.length === 0) {
+      return {
+        confidence: 0,
+        reasoning: "No success criteria defined for auto-detection",
+        detected: false,
+        provider: "heuristic",
+        criteriaResults: [],
+        missingElements: ["Success criteria not defined"],
+        suggestions: [
+          "Define success criteria for the task",
+          "Add file-exists, command-runs, or test-passes criteria",
+        ],
+      };
+    }
+
+    const criteriaResults: CriterionResult[] = [];
+    const missingElements: string[] = [];
+
+    // Evaluate each criterion
+    for (const criterion of criteria) {
+      const result = await this.checkCriterion(criterion);
+      
+      // Build evidence from execution result if available
+      let evidence: string | undefined;
+      if (executionResult) {
+        if (criterion.type === "file-exists" && executionResult.filesCreated) {
+          const relevantFiles = executionResult.filesCreated.filter(f => 
+            f.includes(criterion.validation) || criterion.validation.includes(f)
+          );
+          if (relevantFiles.length > 0) {
+            evidence = `Files created: ${relevantFiles.join(", ")}`;
+          }
+        } else if (criterion.type.includes("command") || criterion.type.includes("passes")) {
+          if (executionResult.commandsRun) {
+            const relevantCommands = executionResult.commandsRun.filter(cmd =>
+              cmd.includes(criterion.validation) || criterion.validation.includes(cmd)
+            );
+            if (relevantCommands.length > 0) {
+              evidence = `Commands executed: ${relevantCommands.join(", ")}`;
+            }
+          }
+        }
+      }
+
+      criteriaResults.push({
+        criterion,
+        met: result.met,
+        reason: result.reason,
+        evidence,
+      });
+
+      // Track missing elements
+      if (!result.met) {
+        missingElements.push(`${criterion.type}: ${criterion.validation}`);
+      }
+    }
+
+    // Calculate confidence
+    const metCount = criteriaResults.filter((r) => r.met).length;
+    const confidence = metCount / criteria.length;
+
+    // Build reasoning
+    const reasoning = criteriaResults
+      .map((r) => `${r.met ? "✓" : "✗"} ${r.criterion.type}: ${r.reason}`)
+      .join("; ");
+
+    // Generate suggestions based on unmet criteria
+    const suggestions = this.generateSuggestions(criteriaResults, executionResult);
+
+    return {
+      confidence,
+      reasoning,
+      detected: confidence >= 0.8,
+      provider: "heuristic",
+      criteriaResults,
+      missingElements,
+      suggestions,
+    };
+  }
+
+  /**
+   * Generate suggestions based on evaluation results
+   */
+  private generateSuggestions(
+    criteriaResults: CriterionResult[],
+    executionResult?: ExecutionResult
+  ): string[] {
+    const suggestions: string[] = [];
+    const unmetCriteria = criteriaResults.filter((r) => !r.met);
+
+    for (const result of unmetCriteria) {
+      const { criterion } = result;
+
+      switch (criterion.type) {
+        case "file-exists":
+          suggestions.push(
+            `Create or verify file: ${criterion.validation}`,
+            `Check file path is correct relative to workspace root`
+          );
+          break;
+
+        case "command-runs":
+          suggestions.push(
+            `Ensure command can execute: ${criterion.validation}`,
+            `Check command dependencies are installed`
+          );
+          break;
+
+        case "build-passes":
+          suggestions.push(
+            `Fix build errors before proceeding`,
+            `Review build output for specific issues`,
+            `Verify all source files are syntactically correct`
+          );
+          break;
+
+        case "test-passes":
+          suggestions.push(
+            `Fix failing tests`,
+            `Review test output for assertion failures`,
+            `Ensure test dependencies are available`
+          );
+          break;
+
+        case "lint-passes":
+          suggestions.push(
+            `Fix linting errors`,
+            `Run linter to see specific issues`,
+            `Update code to match style guidelines`
+          );
+          break;
+
+        case "custom":
+          suggestions.push(
+            `Manually verify custom criterion: ${criterion.description}`,
+            `Review task requirements for completion criteria`
+          );
+          break;
+      }
+    }
+
+    // Add execution-specific suggestions
+    if (executionResult?.error) {
+      suggestions.push(
+        `Address execution error: ${executionResult.error}`,
+        `Review error message for root cause`
+      );
+    }
+
+    // Deduplicate suggestions
+    return [...new Set(suggestions)];
   }
 
   /**

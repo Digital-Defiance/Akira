@@ -4,8 +4,17 @@
  */
 
 import * as path from "path";
+import * as fs from "fs";
 import { StorageLayer } from "./storage-layer";
 import { getEventBus } from "./event-bus";
+import { DecisionEngine } from "./decision-engine";
+import {
+  AttemptRecord,
+  FailurePattern,
+  EnvironmentState,
+  TaskRecord,
+  DecisionResult,
+} from "./types";
 
 /**
  * Context entry in conversation history
@@ -63,6 +72,8 @@ export class ContextManager {
   private limits: ContextLimits;
   private sessionId: string | null = null;
   private summaryGenerated: boolean = false;
+  private decisionEngine: DecisionEngine;
+  private failuresDir: string;
 
   constructor(
     workspaceRoot: string,
@@ -70,7 +81,9 @@ export class ContextManager {
   ) {
     this.storage = new StorageLayer(workspaceRoot);
     this.contextDir = path.join(".kiro", "context");
+    this.failuresDir = path.join(".kiro", "sessions");
     this.limits = { ...DEFAULT_LIMITS, ...limits };
+    this.decisionEngine = new DecisionEngine(workspaceRoot);
   }
 
   /**
@@ -417,6 +430,154 @@ export class ContextManager {
    */
   async forceSummarize(): Promise<SummaryResult> {
     return await this.summarizeHistory();
+  }
+
+  /**
+   * Track an execution attempt for reflection loop
+   */
+  async trackAttempt(
+    sessionId: string,
+    taskId: string,
+    attempt: AttemptRecord
+  ): Promise<void> {
+    const failuresPath = path.join(this.failuresDir, sessionId, "failures.json");
+    
+    // Ensure directory exists
+    await this.storage.ensureDir(path.dirname(failuresPath));
+    
+    // Load existing failures data
+    let failuresData: any = { sessionId, tasks: {} };
+    if (await this.storage.exists(failuresPath)) {
+      const content = await this.storage.readFile(failuresPath);
+      failuresData = JSON.parse(content);
+    }
+    
+    // Ensure tasks object exists
+    if (!failuresData.tasks) {
+      failuresData.tasks = {};
+    }
+    
+    // Initialize task entry if needed (use Object.prototype.hasOwnProperty to avoid prototype pollution)
+    if (!Object.prototype.hasOwnProperty.call(failuresData.tasks, taskId)) {
+      failuresData.tasks[taskId] = {
+        attempts: [],
+        patterns: [],
+      };
+    }
+    
+    // Add the attempt
+    failuresData.tasks[taskId].attempts.push(attempt);
+    
+    // Save back to disk
+    await this.storage.writeFileAtomic(failuresPath, JSON.stringify(failuresData, null, 2));
+  }
+
+  /**
+   * Get failure history for a task
+   */
+  async getFailureHistory(
+    sessionId: string,
+    taskId: string
+  ): Promise<AttemptRecord[]> {
+    const failuresPath = path.join(this.failuresDir, sessionId, "failures.json");
+    
+    if (!(await this.storage.exists(failuresPath))) {
+      return [];
+    }
+    
+    const content = await this.storage.readFile(failuresPath);
+    const failuresData = JSON.parse(content);
+    
+    // Use Object.prototype.hasOwnProperty to avoid prototype pollution
+    if (!failuresData.tasks || !Object.prototype.hasOwnProperty.call(failuresData.tasks, taskId)) {
+      return [];
+    }
+    
+    return failuresData.tasks[taskId]?.attempts || [];
+  }
+
+  /**
+   * Detect failure patterns for a task
+   */
+  async detectFailurePatterns(
+    sessionId: string,
+    taskId: string
+  ): Promise<FailurePattern[]> {
+    const attempts = await this.getFailureHistory(sessionId, taskId);
+    
+    if (attempts.length === 0) {
+      return [];
+    }
+    
+    // Group by error message
+    const errorCounts = new Map<string, { count: number; firstSeen: string; lastSeen: string }>();
+    
+    for (const attempt of attempts) {
+      const errorMsg = attempt.result.error || "Unknown error";
+      
+      if (!errorCounts.has(errorMsg)) {
+        errorCounts.set(errorMsg, {
+          count: 0,
+          firstSeen: attempt.timestamp,
+          lastSeen: attempt.timestamp,
+        });
+      }
+      
+      const entry = errorCounts.get(errorMsg)!;
+      entry.count++;
+      entry.lastSeen = attempt.timestamp;
+    }
+    
+    // Convert to FailurePattern array
+    const patterns: FailurePattern[] = [];
+    for (const [errorMessage, data] of errorCounts) {
+      patterns.push({
+        errorMessage,
+        occurrences: data.count,
+        firstSeen: data.firstSeen,
+        lastSeen: data.lastSeen,
+      });
+    }
+    
+    // Sort by occurrence count (descending)
+    patterns.sort((a, b) => b.occurrences - a.occurrences);
+    
+    return patterns;
+  }
+
+  /**
+   * Capture current environment state
+   */
+  async captureEnvironmentState(
+    workspaceRoot: string
+  ): Promise<EnvironmentState> {
+    const state: EnvironmentState = {
+      filesCreated: [],
+      filesModified: [],
+      commandOutputs: new Map<string, string>(),
+      workingDirectoryState: [],
+    };
+    
+    try {
+      // List files in workspace root (non-recursive, just top level)
+      const files = await fs.promises.readdir(workspaceRoot);
+      state.workingDirectoryState = files;
+    } catch (error) {
+      // If we can't read directory, just leave it empty
+      state.workingDirectoryState = [];
+    }
+    
+    return state;
+  }
+
+  /**
+   * Evaluate task after execution
+   */
+  async evaluateAfterExecution(
+    task: TaskRecord,
+    sessionId: string
+  ): Promise<DecisionResult> {
+    return await this.decisionEngine.evaluateTask(task, task.successCriteria);
   }
 
   /**

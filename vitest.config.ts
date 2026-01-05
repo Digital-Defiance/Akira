@@ -7,14 +7,15 @@ export default defineConfig({
     pool: "forks",
     poolOptions: {
       forks: {
-        singleFork: true,
+        minForks: 1,
+        maxForks: 12, // Use 12 forks (leave 4 cores for system/main process)
+        execArgv: ['--max-old-space-size=8192', '--expose-gc'],
       },
     },
     include: ["src/**/*.test.ts"],
     exclude: [
       "src/**/*.e2e.test.ts",
       "node_modules/**",
-      // "src/execution/scheduler.test.ts", // Re-enabled - testing fix
     ],
     coverage: {
       provider: "v8",
@@ -25,6 +26,7 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
     },
+    testTimeout: 30000,
   },
   resolve: {
     alias: {

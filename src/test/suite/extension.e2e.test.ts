@@ -25,8 +25,14 @@ suite("Extension E2E Test Suite", () => {
       workspaceRoot = workspaceFolders[0].uri.fsPath;
     }
 
+    // Debug: List all extensions
+    console.log("All loaded extensions:");
+    vscode.extensions.all.forEach(ext => {
+      console.log(`  - ${ext.id} (active: ${ext.isActive})`);
+    });
+
     // Ensure extension is activated
-    const extension = vscode.extensions.getExtension("Digital-Defiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }
@@ -35,14 +41,14 @@ suite("Extension E2E Test Suite", () => {
   suite("Extension Activation", () => {
     test("Extension should be present", () => {
       const extension = vscode.extensions.getExtension(
-        "Digital-Defiance.akira"
+        "DigitalDefiance.akira"
       );
       assert.ok(extension, "Extension not found");
     });
 
     test("Extension should activate", async () => {
       const extension = vscode.extensions.getExtension(
-        "Digital-Defiance.akira"
+        "DigitalDefiance.akira"
       );
       assert.ok(extension, "Extension not found");
 

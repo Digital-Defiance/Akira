@@ -45,6 +45,26 @@ const features: Feature[] = [
     ],
   },
   {
+    title: "Adaptive Reflection Loop",
+    icon: "🔄",
+    description:
+      "Automatically retry failed tasks with failure-aware re-planning. The system iteratively executes, evaluates, and adjusts strategies up to 3 times, learning from each failure to find the right approach.",
+    tech: [
+      "Iterative Re-planning",
+      "Failure Context",
+      "Pattern Detection",
+      "User Escalation",
+    ],
+    category: "Workflow",
+    highlights: [
+      "Up to 3 adaptive retry iterations with failure context",
+      "LLM receives detailed failure information to avoid repeating mistakes",
+      "Distinguishes transient errors (retry) from strategic failures (reflection)",
+      "Detects persistent failure patterns and escalates to user",
+      "Full observability: all iterations logged to reflection.md",
+    ],
+  },
+  {
     title: "EARS Requirements",
     icon: "✅",
     description:
@@ -253,6 +273,13 @@ const Features = () => {
               <p>
                 Four-phase approach with explicit approvals ensures quality at
                 every step
+              </p>
+            </div>
+            <div className="value-prop">
+              <strong>🔄 Adaptive Reflection</strong>
+              <p>
+                Automatically retry failed tasks with failure-aware re-planning
+                up to 3 iterations
               </p>
             </div>
             <div className="value-prop">

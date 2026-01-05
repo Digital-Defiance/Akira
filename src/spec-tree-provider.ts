@@ -283,12 +283,15 @@ export class SpecTreeProvider
       const phase = state?.currentPhase ?? "requirements";
       const progress = this.getProgressForSpec(spec);
       const approvalStatus = this.getApprovalStatus(spec);
+      
+      // Check if current phase is approved
+      const currentPhaseApproved = this.isSpecApproved(spec, phase);
 
       const item = new SpecTreeItem(
         spec.featureName,
         phase,
         progress,
-        approvalStatus === "all",
+        currentPhaseApproved,
         vscode.TreeItemCollapsibleState.Collapsed
       );
 

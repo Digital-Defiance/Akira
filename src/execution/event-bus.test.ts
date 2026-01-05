@@ -34,7 +34,7 @@ describe("EventBus", () => {
       expect(handler).toHaveBeenCalledWith(event);
     });
 
-    it("should call multiple handlers for same event type", () => {
+    it("should call multiple handlers for same event type", async () => {
       const handler1 = vi.fn();
       const handler2 = vi.fn();
 
@@ -48,7 +48,7 @@ describe("EventBus", () => {
         data: { taskId: "task-1" },
       };
 
-      eventBus.publish(event);
+      await eventBus.publish(event);
 
       expect(handler1).toHaveBeenCalledWith(event);
       expect(handler2).toHaveBeenCalledWith(event);

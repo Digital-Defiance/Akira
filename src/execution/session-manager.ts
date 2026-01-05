@@ -11,6 +11,11 @@ import {
   SessionConfig,
   TaskRecord,
   SessionStatus,
+  CheckboxState,
+  ExecutionResult,
+  DecisionResult,
+  ReflectionStats,
+  FailurePattern,
 } from "./types";
 
 /**
@@ -212,7 +217,7 @@ export class SessionManager {
    */
   async markTaskComplete(sessionId: string, taskId: string): Promise<void> {
     await this.updateTask(sessionId, taskId, {
-      checkboxState: "COMPLETE",
+      checkboxState: CheckboxState.COMPLETE,
       completionTimestamp: new Date().toISOString(),
     });
 
@@ -229,7 +234,7 @@ export class SessionManager {
     error: string
   ): Promise<void> {
     await this.updateTask(sessionId, taskId, {
-      checkboxState: "FAILED",
+      checkboxState: CheckboxState.FAILED,
       error,
     });
 
@@ -311,6 +316,159 @@ export class SessionManager {
     } catch {
       const header = `# Decision Log\n\nSession ID: ${sessionId}\n`;
       await this.storage.writeFileAtomic(decisionsPath, header + entry);
+    }
+  }
+
+  /**
+   * Log a reflection iteration to reflection.md
+   */
+  async logReflectionIteration(
+    sessionId: string,
+    taskId: string,
+    iteration: number,
+    result: ExecutionResult,
+    evaluation: DecisionResult
+  ): Promise<void> {
+    const reflectionPath = path.join(this.sessionsDir, sessionId, "reflection.md");
+    const timestamp = new Date().toISOString();
+
+    // Format the status
+    const status = result.success ? "Success" : "Failed";
+    
+    // Format actions attempted
+    const actionsText = result.filesModified?.length || result.filesCreated?.length || result.commandsRun?.length
+      ? [
+          result.filesCreated?.length ? `- file-write: ${result.filesCreated.join(", ")}` : null,
+          result.filesModified?.length ? `- file-modify: ${result.filesModified.join(", ")}` : null,
+          result.commandsRun?.length ? `- command: ${result.commandsRun.join(", ")}` : null,
+        ].filter(Boolean).join("\n")
+      : "- No actions recorded";
+
+    const entry = `
+### Iteration ${iteration} (${timestamp})
+
+**Status:** ${status}  
+**Confidence:** ${evaluation.confidence.toFixed(1)}  
+**Reasoning:** ${evaluation.reasoning}
+
+**Actions Attempted:**
+
+${actionsText}
+
+**Result:** ${result.error || "Success"}
+
+---
+`;
+
+    try {
+      const existing = await this.storage.readFile(reflectionPath);
+      await this.storage.writeFileAtomic(reflectionPath, existing + entry);
+    } catch {
+      // File doesn't exist, create with header
+      const header = `# Reflection Loop Log
+
+## Task: ${taskId}
+`;
+      await this.storage.writeFileAtomic(reflectionPath, header + entry);
+    }
+
+    // Also append to history
+    await this.appendToHistory(
+      sessionId,
+      `Reflection iteration ${iteration} for task ${taskId}`,
+      {
+        status,
+        confidence: evaluation.confidence,
+        reasoning: evaluation.reasoning,
+        error: result.error,
+      }
+    );
+  }
+
+  /**
+   * Get reflection statistics for a session
+   */
+  async getReflectionStats(sessionId: string): Promise<ReflectionStats> {
+    const failuresPath = path.join(this.sessionsDir, sessionId, "failures.json");
+    
+    // Default stats
+    const stats: ReflectionStats = {
+      totalReflections: 0,
+      averageIterations: 0,
+      successRate: 0,
+      commonFailurePatterns: [],
+    };
+    
+    // Check if failures file exists
+    if (!(await this.storage.exists(failuresPath))) {
+      return stats;
+    }
+    
+    try {
+      const content = await this.storage.readFile(failuresPath);
+      const failuresData = JSON.parse(content);
+      
+      if (!failuresData.tasks) {
+        return stats;
+      }
+      
+      // Collect all patterns across all tasks
+      const allPatterns = new Map<string, FailurePattern>();
+      let totalIterations = 0;
+      let totalSuccesses = 0;
+      let totalTasks = 0;
+      
+      for (const taskId in failuresData.tasks) {
+        if (!Object.prototype.hasOwnProperty.call(failuresData.tasks, taskId)) {
+          continue;
+        }
+        
+        const taskData = failuresData.tasks[taskId];
+        const attempts = taskData.attempts || [];
+        
+        if (attempts.length > 0) {
+          totalTasks++;
+          totalIterations += attempts.length;
+          
+          // Check if last attempt was successful
+          const lastAttempt = attempts[attempts.length - 1];
+          if (lastAttempt.result.success) {
+            totalSuccesses++;
+          }
+          
+          // Merge patterns
+          const patterns = taskData.patterns || [];
+          for (const pattern of patterns) {
+            if (allPatterns.has(pattern.errorMessage)) {
+              const existing = allPatterns.get(pattern.errorMessage)!;
+              existing.occurrences += pattern.occurrences;
+              // Update timestamps if needed
+              if (pattern.firstSeen < existing.firstSeen) {
+                existing.firstSeen = pattern.firstSeen;
+              }
+              if (pattern.lastSeen > existing.lastSeen) {
+                existing.lastSeen = pattern.lastSeen;
+              }
+            } else {
+              allPatterns.set(pattern.errorMessage, { ...pattern });
+            }
+          }
+        }
+      }
+      
+      stats.totalReflections = totalTasks;
+      stats.averageIterations = totalTasks > 0 ? totalIterations / totalTasks : 0;
+      stats.successRate = totalTasks > 0 ? totalSuccesses / totalTasks : 0;
+      
+      // Sort patterns by occurrence and take top 10
+      stats.commonFailurePatterns = Array.from(allPatterns.values())
+        .sort((a, b) => b.occurrences - a.occurrences)
+        .slice(0, 10);
+      
+      return stats;
+    } catch (error) {
+      // If parsing fails, return default stats
+      return stats;
     }
   }
 

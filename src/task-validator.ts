@@ -46,7 +46,56 @@ export function parseSuccessCriteria(
   for (const line of taskLines) {
     const trimmed = line.trim();
 
-    // Check if we're entering success criteria section
+    // Check if line contains inline success criteria
+    const inlineMatch = trimmed.match(/success criteria:\s*(.+)/i);
+    if (inlineMatch) {
+      const criteriaText = inlineMatch[1];
+      
+      // Parse inline criteria (can be comma or "and" separated)
+      const parts = criteriaText.split(/\s+and\s+|,\s*/);
+      
+      for (const part of parts) {
+        const partTrimmed = part.trim();
+        if (!partTrimmed) continue;
+        
+        // Detect type of criteria
+        if (partTrimmed.includes("build") || partTrimmed.includes("npm run build")) {
+          criteria.push({
+            type: "command-runs",
+            description: partTrimmed,
+            validation: extractCommand(partTrimmed) || "npm run build",
+          });
+        } else if (partTrimmed.includes("lint")) {
+          criteria.push({
+            type: "lint-passes",
+            description: partTrimmed,
+            validation: "npm run lint",
+          });
+        } else if (partTrimmed.includes("test")) {
+          criteria.push({
+            type: "test-passes",
+            description: partTrimmed,
+            validation: "npm test",
+          });
+        } else if (partTrimmed.includes("file") || partTrimmed.includes("exist")) {
+          criteria.push({
+            type: "file-exists",
+            description: partTrimmed,
+            validation: extractFilePaths(partTrimmed).join(","),
+          });
+        } else {
+          criteria.push({
+            type: "custom",
+            description: partTrimmed,
+            validation: partTrimmed,
+          });
+        }
+      }
+      
+      continue;
+    }
+
+    // Check if we're entering success criteria section (multi-line format)
     if (
       trimmed.toLowerCase().includes("success criteria:") ||
       trimmed.toLowerCase().startsWith("success criteria")

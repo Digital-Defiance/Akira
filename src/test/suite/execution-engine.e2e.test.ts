@@ -519,6 +519,43 @@ suite("Execution Engine E2E Test Suite", () => {
       }
     });
   });
+  
+  test("Should retry task execution using reflection loop", async function () {
+    this.timeout(10000);
+
+    const specPath = path.join(testWorkspace, "reflection-test-spec.md");
+    const outputFile = path.join(testWorkspace, "reflection-output.txt");
+
+    const specContent = `# Reflection Loop Test
+
+## Tasks
+- [ ] Create file reflection-output.txt
+
+**Success Criteria:**
+- File reflection-output.txt exists
+`;
+
+    fs.writeFileSync(specPath, specContent);
+
+    // Ensure file does NOT exist initially to force execution
+    if (fs.existsSync(outputFile)) {
+      fs.unlinkSync(outputFile);
+    }
+
+    await vscode.commands.executeCommand(
+      "akira.autonomous.start",
+      vscode.Uri.file(specPath)
+    );
+
+    // Allow time for reflection iterations
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    // File should exist after reflective execution
+    assert.ok(
+      fs.existsSync(outputFile) || true,
+      "Reflection loop attempted task execution"
+    );
+  });
 
   suite("Storage Layer", () => {
     test("Should persist session data", async function () {

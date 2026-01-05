@@ -99,9 +99,12 @@ export class Scheduler {
       this.queue.splice(insertIndex, 0, queuedTask);
     }
 
+    // Fire and forget - don't block enqueue on event emission
     getEventBus().emit("taskQueued", sessionId, {
       taskId: task.id,
       queueLength: this.queue.length,
+    }).catch((error) => {
+      console.error("Error emitting taskQueued event:", error);
     });
 
     // Try to process if running
@@ -134,7 +137,8 @@ export class Scheduler {
     }
 
     this.isRunning = true;
-    // Don't await - let it run in background
+    // Start the process loop but don't track the promise
+    // This prevents vitest from waiting for it
     this.processLoop().catch((error) => {
       console.error("Error in scheduler process loop:", error);
       this.isRunning = false;
@@ -145,19 +149,38 @@ export class Scheduler {
    * Stop processing (waits for current tasks to complete)
    */
   async stopProcessing(): Promise<void> {
+    if (!this.isRunning) {
+      return; // Already stopped
+    }
+    
     this.isRunning = false;
 
-    // Wait for all workers to finish
+    // Wait a moment for the process loop to exit
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Wait for all workers to finish with a timeout
+    const startTime = Date.now();
+    const workerTimeout = 2000; // 2 second timeout for workers
+    
     while (this.workers.some((w) => w.busy)) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (Date.now() - startTime > workerTimeout) {
+        console.warn('Scheduler workers timeout - forcing shutdown');
+        await this.shutdown();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }
 
   /**
    * Shutdown immediately (cancels pending tasks)
    */
-  shutdown(): void {
+  async shutdown(): Promise<void> {
     this.isRunning = false;
+    
+    // Give the process loop a moment to exit
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    
     this.queue = [];
     this.workers.forEach((w) => {
       w.busy = false;
@@ -210,12 +233,17 @@ export class Scheduler {
    * Main processing loop
    */
   private async processLoop(): Promise<void> {
-    while (this.isRunning) {
-      const processed = await this.tryProcessNext();
-      if (!processed && this.queue.length === 0) {
-        // Nothing to process, wait a bit
-        await new Promise((resolve) => setTimeout(resolve, 100));
+    try {
+      while (this.isRunning) {
+        const processed = await this.tryProcessNext();
+        if (!processed && this.queue.length === 0) {
+          // Nothing to process, wait a bit with a single short delay
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
       }
+    } finally {
+      // Ensure we always mark as not running when loop exits
+      this.isRunning = false;
     }
   }
 

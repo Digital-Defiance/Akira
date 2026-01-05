@@ -44,16 +44,19 @@ Comprehensive testing documentation for the Akira Autonomous Execution Engine wi
 ### 1. Unit Tests
 
 **Command:**
+
 ```bash
 npm test
 ```
 
 **What it runs:**
+
 - All `*.test.ts` files in `src/` and `src/execution/`
 - Fast execution (~10-30 seconds)
 - Mocked dependencies
 
 **Output:**
+
 ```
 ✓ src/execution/event-bus.test.ts (16 tests)
 ✓ src/execution/storage-layer.test.ts (11 tests)
@@ -73,17 +76,20 @@ Tests       158 passed (158)
 ### 2. Integration Tests
 
 **Command:**
+
 ```bash
 npm test src/execution-engine.integration.test.ts
 ```
 
 **What it runs:**
+
 - Multi-component workflows
 - Real file system operations
 - Component interaction verification
 - Execution time: ~30-60 seconds
 
 **Test Scenarios:**
+
 - Complete session lifecycle
 - Task execution flow
 - Scheduler with concurrency
@@ -98,17 +104,20 @@ npm test src/execution-engine.integration.test.ts
 ### 3. E2E Tests
 
 **Command:**
+
 ```bash
 npm run test:e2e
 ```
 
 **What it runs:**
+
 - Real VS Code extension environment
 - Actual command execution
 - UI component testing
 - Execution time: ~2-5 minutes
 
 **Test Scenarios:**
+
 - Command registration
 - Session creation through UI
 - Task detection from files
@@ -124,17 +133,17 @@ npm run test:e2e
 
 ## Test Coverage Matrix
 
-| Component | Unit Tests | Integration | E2E | Total |
-|-----------|------------|-------------|-----|-------|
-| **EventBus** | ✅ 16 tests | ✅ Included | ✅ Included | **100%** |
-| **StorageLayer** | ✅ 11 tests | ✅ Included | ✅ Included | **100%** |
-| **SessionManager** | ✅ 18 tests | ✅ Included | ✅ Included | **100%** |
-| **Scheduler** | ✅ 14 tests | ✅ Included | ✅ Included | **100%** |
-| **DecisionEngine** | ✅ 15 tests | ✅ Included | ✅ Included | **100%** |
-| **ExecutionEngine** | ✅ 13 tests | ✅ Included | ✅ Included | **100%** |
-| **CheckpointManager** | ✅ 16 tests | ✅ Included | ✅ Included | **100%** |
-| **GitIntegrator** | ✅ 12 tests | ✅ Included | ✅ Included | **100%** |
-| **LLMIntegrator** | ✅ 20 tests | ✅ Included | ✅ Included | **100%** |
+| Component              | Unit Tests  | Integration | E2E         | Total    |
+| ---------------------- | ----------- | ----------- | ----------- | -------- |
+| **EventBus**           | ✅ 16 tests | ✅ Included | ✅ Included | **100%** |
+| **StorageLayer**       | ✅ 11 tests | ✅ Included | ✅ Included | **100%** |
+| **SessionManager**     | ✅ 18 tests | ✅ Included | ✅ Included | **100%** |
+| **Scheduler**          | ✅ 14 tests | ✅ Included | ✅ Included | **100%** |
+| **DecisionEngine**     | ✅ 15 tests | ✅ Included | ✅ Included | **100%** |
+| **ExecutionEngine**    | ✅ 13 tests | ✅ Included | ✅ Included | **100%** |
+| **CheckpointManager**  | ✅ 16 tests | ✅ Included | ✅ Included | **100%** |
+| **GitIntegrator**      | ✅ 12 tests | ✅ Included | ✅ Included | **100%** |
+| **LLMIntegrator**      | ✅ 20 tests | ✅ Included | ✅ Included | **100%** |
 | **AutonomousExecutor** | ✅ 23 tests | ✅ Included | ✅ Included | **100%** |
 
 **Total Test Count:** 140+ unit tests + 15 integration scenarios + 15 E2E suites
@@ -144,9 +153,11 @@ npm run test:e2e
 ## Unit Test Details
 
 ### EventBus Tests (`event-bus.test.ts`)
+
 **Coverage:** 16 tests
 
 **Test Categories:**
+
 - ✅ Subscription management (subscribe, unsubscribe)
 - ✅ Event emission and handling
 - ✅ Wildcard subscriptions (`*`)
@@ -157,9 +168,11 @@ npm run test:e2e
 - ✅ Subscription cleanup
 
 ### StorageLayer Tests (`storage-layer.test.ts`)
+
 **Coverage:** 11 tests
 
 **Test Categories:**
+
 - ✅ Atomic file writes (temp file + rename)
 - ✅ Automatic directory creation
 - ✅ Concurrent write safety
@@ -173,9 +186,11 @@ npm run test:e2e
 - ✅ Error handling
 
 ### SessionManager Tests (`session-manager.test.ts`)
+
 **Coverage:** 18 tests
 
 **Test Categories:**
+
 - ✅ Session creation with metadata
 - ✅ Session state persistence
 - ✅ Task management (add, update, complete)
@@ -189,9 +204,11 @@ npm run test:e2e
 - ✅ Concurrent session handling
 
 ### Scheduler Tests (`scheduler.test.ts`)
+
 **Coverage:** 14 tests
 
 **Test Categories:**
+
 - ✅ Task enqueueing
 - ✅ Priority queue ordering
 - ✅ Concurrency limits (1-10 workers)
@@ -204,9 +221,11 @@ npm run test:e2e
 - ✅ Pending task tracking
 
 ### DecisionEngine Tests (`decision-engine.test.ts`)
+
 **Coverage:** 15 tests
 
 **Test Categories:**
+
 - ✅ Task detection evaluation
 - ✅ File existence criteria
 - ✅ File content criteria
@@ -221,9 +240,11 @@ npm run test:e2e
 - ✅ Command failures
 
 ### ExecutionEngine Tests (`execution-engine.test.ts`)
+
 **Coverage:** 13 tests
 
 **Test Categories:**
+
 - ✅ File write actions
 - ✅ File delete actions
 - ✅ Command execution
@@ -237,9 +258,11 @@ npm run test:e2e
 - ✅ Resource cleanup
 
 ### CheckpointManager Tests (`checkpoint-manager.test.ts`)
+
 **Coverage:** 16 tests
 
 **Test Categories:**
+
 - ✅ Checkpoint creation with Git commit
 - ✅ Checkpoint creation without Git
 - ✅ File snapshot capture
@@ -256,9 +279,11 @@ npm run test:e2e
 - ✅ Event emission
 
 ### GitIntegrator Tests (`git-integrator.test.ts`)
+
 **Coverage:** 12 tests
 
 **Test Categories:**
+
 - ✅ Git availability detection
 - ✅ Current commit retrieval
 - ✅ Stash creation
@@ -273,9 +298,11 @@ npm run test:e2e
 - ✅ Working directory changes
 
 ### LLMIntegrator Tests (`llm-integrator.test.ts`)
+
 **Coverage:** 20 tests
 
 **Test Categories:**
+
 - ✅ Generation type inference (requirements/design/tasks/impl)
 - ✅ Case-insensitive type detection
 - ✅ Task parsing for file actions
@@ -293,9 +320,11 @@ npm run test:e2e
 - ✅ Resource disposal (output channel)
 
 ### AutonomousExecutor Tests (`autonomous-executor.test.ts`)
+
 **Coverage:** 23 tests
 
 **Test Categories:**
+
 - ✅ Session initialization
 - ✅ Configuration application (default)
 - ✅ Configuration application (custom)
@@ -329,39 +358,48 @@ npm run test:e2e
 ### Test Scenarios
 
 1. **Complete Session Lifecycle**
+
    - Create → Start → Execute → Complete
    - Verifies end-to-end session flow
 
 2. **Task Execution Flow**
+
    - Task detection → Plan building → Execution → Completion
    - Tests file write and command actions
 
 3. **Scheduler with Concurrency**
+
    - Multiple tasks with concurrency limit
    - Verifies worker pool behavior
 
 4. **Checkpoint and Rollback**
+
    - Create checkpoint → Modify files → Restore
    - Tests Git integration and file fallback
 
 5. **Decision Engine Integration**
+
    - Task with success criteria
    - Auto-completion detection
 
 6. **Event Bus Coordination**
+
    - Event emission across components
    - Subscriber notification
 
 7. **Storage Atomic Operations**
+
    - Concurrent writes
    - Queue flushing
 
 8. **Error Recovery**
+
    - Failed task execution
    - Retry logic
    - Checkpoint restoration
 
 9. **Multi-Session Management**
+
    - Parallel sessions
    - Session isolation
 
@@ -379,42 +417,51 @@ npm run test:e2e
 ### Test Suites
 
 1. **Command Registration**
+
    - Verify all 4 autonomous commands registered
    - Commands: start, pause, resume, stop
 
 2. **Session Creation**
+
    - Create session through VS Code command
    - Verify session files created
 
 3. **Task Detection**
+
    - Parse spec file with checkboxes
    - Create TaskRecords
 
 4. **Checkpoint System**
+
    - Create checkpoint via command
    - Restore checkpoint
    - Verify Git integration
 
 5. **LLM Integration**
+
    - Generate execution plan
    - Verify LLM generator calls
 
 6. **Error Handling**
+
    - Invalid spec path
    - Corrupted session files
    - Git errors
 
 7. **Status Bar Updates**
+
    - Session start updates bar
    - Progress percentage display
    - Completion notification
 
 8. **Output Channel**
+
    - Log messages
    - Execution details
    - Error reports
 
 9. **Concurrent Execution**
+
    - Multiple tasks running
    - Respects concurrency limit
 
@@ -430,31 +477,34 @@ npm run test:e2e
 ### Mocking Strategy
 
 **Unit Tests:**
+
 ```typescript
 // Mock external dependencies
 vi.mock("fs", () => ({
   promises: {
     writeFile: vi.fn(),
     readFile: vi.fn(),
-    mkdir: vi.fn()
-  }
+    mkdir: vi.fn(),
+  },
 }));
 
 // Mock VS Code API
 vi.mock("vscode", () => ({
   window: {
     showInformationMessage: vi.fn(),
-    createStatusBarItem: vi.fn()
-  }
+    createStatusBarItem: vi.fn(),
+  },
 }));
 ```
 
 **Integration Tests:**
+
 - Use real file system (temp directories)
 - Mock only VS Code API
 - Real component interactions
 
 **E2E Tests:**
+
 - No mocking
 - Real VS Code environment
 - Actual file system
@@ -466,9 +516,7 @@ it("should execute file-write action", async () => {
   // Arrange
   const plan = {
     taskId: "task-1",
-    actions: [
-      { type: "file-write", target: "output.txt", content: "test" }
-    ]
+    actions: [{ type: "file-write", target: "output.txt", content: "test" }],
   };
 
   // Act
@@ -550,7 +598,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm install
       - run: npm test
       - run: npm test src/execution-engine.integration.test.ts
@@ -581,12 +629,13 @@ jobs:
 ✅ **15 Integration Scenarios** - Multi-component workflows  
 ✅ **15 E2E Test Suites** - Full VS Code integration  
 ✅ **100% Component Coverage** - All execution engine components  
-✅ **CI/CD Ready** - Automated testing pipeline  
+✅ **CI/CD Ready** - Automated testing pipeline
 
 **Test Execution Time:**
+
 - Unit: ~10-30 seconds
-- Integration: ~30-60 seconds  
-- E2E: ~2-5 minutes  
+- Integration: ~30-60 seconds
+- E2E: ~2-5 minutes
 - **Total:** ~3-7 minutes
 
 **Status:** Production-ready with comprehensive test coverage

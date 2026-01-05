@@ -73,6 +73,14 @@ export const workspace = {
     dispose: () => {},
   }),
   openTextDocument: () => Promise.resolve(undefined),
+  fs: {
+    readFile: () => Promise.resolve(Buffer.from("")),
+    writeFile: () => Promise.resolve(),
+    delete: () => Promise.resolve(),
+    readDirectory: () => Promise.resolve([]),
+    createDirectory: () => Promise.resolve(),
+    stat: () => Promise.resolve({ type: 1, ctime: 0, mtime: 0, size: 0 }),
+  },
 };
 
 export const commands = {
