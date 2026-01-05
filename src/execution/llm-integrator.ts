@@ -4,10 +4,16 @@
  */
 
 import * as vscode from "vscode";
+import * as path from "path";
 import { generateDesignWithLLM } from "../llm-design-generator";
 import { generateRequirementsWithLLM } from "../llm-requirements-generator";
 import { generateTasksWithLLM } from "../llm-task-generator";
-import { ExecutionAction, TaskRecord, FailureContext } from "./types";
+import {
+  ExecutionAction,
+  TaskRecord,
+  FailureContext,
+  FailurePattern,
+} from "./types";
 
 /**
  * LLM generation request
@@ -53,10 +59,10 @@ export class LLMIntegrator {
     request: LLMGenerationRequest
   ): Promise<LLMGenerationResult> {
     try {
-      const { task, context } = request;
+      const { task } = request;
 
-      // Determine generation type based on task title or description
-      const taskText = task.description || task.title || "";
+      // Determine generation type based on task title
+      const taskText = task.title || "";
       const generationType = this.inferGenerationType(taskText);
 
       switch (generationType) {
@@ -90,22 +96,22 @@ export class LLMIntegrator {
   private async generateRequirements(
     request: LLMGenerationRequest
   ): Promise<LLMGenerationResult> {
-    const { context } = request;
-
     try {
       // Read spec content
-      const specUri = vscode.Uri.file(context.specPath);
+      const specUri = vscode.Uri.file(request.context.specPath);
       const specContent = await vscode.workspace.fs.readFile(specUri);
       const specText = Buffer.from(specContent).toString("utf-8");
 
       // Generate requirements
       const result = await generateRequirementsWithLLM(specText);
 
-      if (!result.success || !result.requirements) {
+      // Check if result indicates failure (could be null or an error object)
+      if (!result || typeof result !== 'string') {
+        const errorMsg = (result as any)?.error || "Requirements generation failed";
         return {
           success: false,
           actions: [],
-          error: result.error || "Requirements generation failed",
+          error: errorMsg,
         };
       }
 
@@ -113,8 +119,8 @@ export class LLMIntegrator {
       const actions: ExecutionAction[] = [
         {
           type: "file-write",
-          path: context.specPath,
-          content: result.requirements,
+          target: request.context.specPath,
+          content: result,
         },
       ];
 
@@ -147,13 +153,14 @@ export class LLMIntegrator {
       const specText = Buffer.from(specContent).toString("utf-8");
 
       // Generate design
-      const result = await generateDesignWithLLM(specText);
+      const featureName = path.basename(path.dirname(context.specPath)) || "spec";
+      const result = await generateDesignWithLLM(featureName, specText);
 
-      if (!result.success || !result.design) {
+      if (!result) {
         return {
           success: false,
           actions: [],
-          error: result.error || "Design generation failed",
+          error: "Design generation failed",
         };
       }
 
@@ -161,8 +168,8 @@ export class LLMIntegrator {
       const actions: ExecutionAction[] = [
         {
           type: "file-write",
-          path: context.specPath,
-          content: result.design,
+          target: context.specPath,
+          content: result,
         },
       ];
 
@@ -195,13 +202,14 @@ export class LLMIntegrator {
       const specText = Buffer.from(specContent).toString("utf-8");
 
       // Generate tasks
-      const result = await generateTasksWithLLM(specText);
+      const featureName = path.basename(path.dirname(context.specPath)) || "spec";
+      const result = await generateTasksWithLLM(featureName, specText);
 
-      if (!result.success || !result.tasks) {
+      if (!result) {
         return {
           success: false,
           actions: [],
-          error: result.error || "Task generation failed",
+          error: "Task generation failed",
         };
       }
 
@@ -209,8 +217,8 @@ export class LLMIntegrator {
       const actions: ExecutionAction[] = [
         {
           type: "file-write",
-          path: context.specPath,
-          content: result.tasks,
+          target: context.specPath,
+          content: result,
         },
       ];
 
@@ -239,6 +247,7 @@ export class LLMIntegrator {
     try {
       // Build context for code generation
       const prompt = this.buildImplementationPrompt(task, context, failureContext);
+      this.outputChannel.appendLine(`LLM implementation prompt length: ${prompt.length}`);
 
       // For now, we'll use a simple approach:
       // Parse the task description for file paths and actions
@@ -489,7 +498,7 @@ ${previousTaskSummary || "None"}
    */
   private parseTaskForActions(task: TaskRecord): ExecutionAction[] {
     const actions: ExecutionAction[] = [];
-    const description = task.description || task.title || "";
+    const description = task.title || "";
 
     // Look for file creation patterns
     const createFilePattern = /create\s+(?:file\s+)?['"`]([^'"`]+)['"`]/gi;

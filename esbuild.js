@@ -90,7 +90,20 @@ async function main() {
 
   // Build E2E tests
   const e2eTestCtx = await esbuild.context({
-    entryPoints: ["src/test/suite/extension.e2e.test.ts"],
+    entryPoints: [
+      "src/test/suite/extension.e2e.test.ts",
+      "src/test/suite/execution-engine.e2e.test.ts",
+      "src/test/suite/reflection-loop.e2e.test.ts",
+      "src/test/suite/screenshot-automation.e2e.test.ts",
+      "src/test/suite/spec-workflow.e2e.test.ts",
+      "src/test/suite/validation.e2e.test.ts",
+      "src/test/suite/chat-participant.e2e.test.ts",
+      "src/test/suite/autonomous-execution.e2e.test.ts",
+      "src/test/suite/mcp-llm-integration.e2e.test.ts",
+      "src/test/suite/codelens-providers.e2e.test.ts",
+      "src/test/suite/tree-view.e2e.test.ts",
+      "src/test/suite/error-handling.e2e.test.ts",
+    ],
     bundle: true,
     format: "cjs",
     minify: production,

@@ -4,10 +4,32 @@
  */
 
 import * as path from "path";
+import * as fs from "fs";
 import { StorageLayer } from "./storage-layer";
 import { getEventBus } from "./event-bus";
 import { GitIntegrator } from "./git-integrator";
 import { CheckpointMetadata, CheckpointFile, RollbackResult } from "./types";
+
+/**
+ * Get the base directory for execution files (.akira or .kiro for backwards compatibility)
+ */
+function getExecutionBaseDirectory(workspaceRoot: string): string {
+  const akiraDir = path.join(workspaceRoot, ".akira");
+  const kiroDir = path.join(workspaceRoot, ".kiro");
+  
+  // If .akira exists, use it
+  if (fs.existsSync(akiraDir)) {
+    return ".akira";
+  }
+  
+  // If .kiro exists (backwards compatibility), use it
+  if (fs.existsSync(kiroDir)) {
+    return ".kiro";
+  }
+  
+  // Neither exists, use preferred (.akira)
+  return ".akira";
+}
 
 /**
  * Checkpoint Manager handles creating and restoring checkpoints
@@ -16,13 +38,14 @@ export class CheckpointManager {
   private storage: StorageLayer;
   private gitIntegrator: GitIntegrator;
   private checkpointsDir: string;
-  private workspaceRoot: string;
 
-  constructor(workspaceRoot: string, specDirectory: string = ".kiro") {
-    this.workspaceRoot = workspaceRoot;
+  constructor(workspaceRoot: string, specDirectory?: string) {
     this.storage = new StorageLayer(workspaceRoot);
     this.gitIntegrator = new GitIntegrator(workspaceRoot);
-    this.checkpointsDir = path.join(specDirectory, "checkpoints");
+    
+    // Use provided directory or auto-detect
+    const baseDir = specDirectory || getExecutionBaseDirectory(workspaceRoot);
+    this.checkpointsDir = path.join(baseDir, "checkpoints");
   }
 
   /**

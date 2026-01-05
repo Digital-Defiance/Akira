@@ -32,6 +32,32 @@ export function toKebabCase(featureName: string): string {
 }
 
 /**
+ * Get the base directory for Akira files (.akira or .kiro for backwards compatibility)
+ * @param workspaceRoot - The workspace root path
+ * @param preferredDir - Preferred directory name (default: ".akira")
+ * @returns The base directory path (.akira if it exists or for new, .kiro if it exists for backwards compat)
+ */
+export function getAkiraBaseDirectory(
+  workspaceRoot: string
+): string {
+  const akiraDir = path.join(workspaceRoot, ".akira");
+  const kiroDir = path.join(workspaceRoot, ".kiro");
+  
+  // If .akira exists, use it
+  if (fs.existsSync(akiraDir)) {
+    return akiraDir;
+  }
+  
+  // If .kiro exists (backwards compatibility), use it
+  if (fs.existsSync(kiroDir)) {
+    return kiroDir;
+  }
+  
+  // Neither exists, default to .akira
+  return akiraDir;
+}
+
+/**
  * Get the spec directory path for a feature
  * @param featureName - The feature name
  * @param workspaceRoot - The workspace root path (optional, uses first workspace folder if not provided)
@@ -50,13 +76,25 @@ export function getSpecDirectoryPath(
     "";
 
   // Use provided specBaseDir or get from config or environment
-  const baseDir =
-    specBaseDir ||
-    process.env.SPEC_DIRECTORY ||
-    vscode?.workspace
-      .getConfiguration("copilotSpec")
-      .get<string>("specDirectory") ||
-    ".kiro/specs";
+  let baseDir: string;
+  
+  if (specBaseDir) {
+    baseDir = specBaseDir;
+  } else {
+    // Check for custom config
+    const customDir = process.env.SPEC_DIRECTORY ||
+      vscode?.workspace
+        .getConfiguration("copilotSpec")
+        .get<string>("specDirectory");
+    
+    if (customDir) {
+      baseDir = customDir;
+    } else {
+      // Use .akira/specs or .kiro/specs for backwards compatibility
+      const akiraBase = getAkiraBaseDirectory(root);
+      baseDir = path.join(path.basename(akiraBase), "specs");
+    }
+  }
 
   const kebabName = toKebabCase(featureName);
   return path.join(root, baseDir, kebabName);
@@ -144,10 +182,20 @@ export function listSpecs(workspaceRoot?: string): SpecInfo[] {
       process.env.WORKSPACE_ROOT ||
       vscode?.workspace.workspaceFolders?.[0]?.uri.fsPath ||
       "";
-    const specBaseDir =
-      process.env.SPEC_DIRECTORY ||
-      vscode?.workspace.getConfiguration("copilotSpec").get<string>("specDirectory") ||
-      ".kiro/specs";
+    
+    // Check for custom config
+    const customDir = process.env.SPEC_DIRECTORY ||
+      vscode?.workspace.getConfiguration("copilotSpec").get<string>("specDirectory");
+    
+    let specBaseDir: string;
+    if (customDir) {
+      specBaseDir = customDir;
+    } else {
+      // Use .akira/specs or .kiro/specs for backwards compatibility
+      const akiraBase = getAkiraBaseDirectory(root);
+      specBaseDir = path.join(path.basename(akiraBase), "specs");
+    }
+    
     const specsPath = path.join(root, specBaseDir);
 
     // Check if specs directory exists
@@ -168,7 +216,7 @@ export function listSpecs(workspaceRoot?: string): SpecInfo[] {
           hasRequirements: fs.existsSync(path.join(specDir, "requirements.md")),
           hasDesign: fs.existsSync(path.join(specDir, "design.md")),
           hasTasks: fs.existsSync(path.join(specDir, "tasks.md")),
-          hasState: fs.existsSync(path.join(specDir, ".state.json")),
+          hasState: fs.existsSync(path.join(specDir, "state.json")),
         });
       }
     }

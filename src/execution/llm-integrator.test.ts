@@ -298,10 +298,9 @@ describe("LLMIntegrator", () => {
       const { generateRequirementsWithLLM } = await import(
         "../llm-requirements-generator"
       );
-      vi.mocked(generateRequirementsWithLLM).mockResolvedValue({
-        success: true,
-        requirements: "Generated requirements",
-      } as any);
+      vi.mocked(generateRequirementsWithLLM).mockResolvedValue(
+        "Generated requirements"
+      );
 
       const result = await llmIntegrator.generateActions({ task, context });
 
@@ -440,10 +439,7 @@ describe("LLMIntegrator", () => {
       const { generateRequirementsWithLLM } = await import(
         "../llm-requirements-generator"
       );
-      vi.mocked(generateRequirementsWithLLM).mockResolvedValue({
-        success: false,
-        error: "LLM API error",
-      } as any);
+      vi.mocked(generateRequirementsWithLLM).mockResolvedValue(null);
 
       const result = await llmIntegrator.generateActions({ task, context });
 

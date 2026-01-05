@@ -116,7 +116,7 @@ suite("Extension E2E Test Suite", () => {
       const strictMode = config.get<boolean>("strictMode");
       const iterations = config.get<number>("propertyTestIterations");
 
-      assert.strictEqual(specDir, ".kiro/specs");
+      assert.strictEqual(specDir, ".akira/specs");
       assert.strictEqual(strictMode, false);
       assert.strictEqual(iterations, 100);
     });
@@ -159,7 +159,7 @@ suite("Extension E2E Test Suite", () => {
 
     setup(() => {
       const config = vscode.workspace.getConfiguration("copilotSpec");
-      const specBaseDir = config.get<string>("specDirectory") || ".kiro/specs";
+      const specBaseDir = config.get<string>("specDirectory") || ".akira/specs";
       specDir = path.join(workspaceRoot, specBaseDir, testSpecName);
     });
 
@@ -299,7 +299,7 @@ suite("Extension E2E Test Suite", () => {
       // Reset
       await config.update(
         "specDirectory",
-        ".kiro/specs",
+        ".akira/specs",
         vscode.ConfigurationTarget.Workspace
       );
 
@@ -313,7 +313,7 @@ suite("Extension E2E Test Suite", () => {
 
     setup(() => {
       const config = vscode.workspace.getConfiguration("copilotSpec");
-      const specBaseDir = config.get<string>("specDirectory") || ".kiro/specs";
+      const specBaseDir = config.get<string>("specDirectory") || ".akira/specs";
       specDirs = testSpecs.map((name) =>
         path.join(workspaceRoot, specBaseDir, name)
       );
@@ -367,7 +367,7 @@ suite("Extension E2E Test Suite", () => {
 
       const numSpecs = 20;
       const config = vscode.workspace.getConfiguration("copilotSpec");
-      const specBaseDir = config.get<string>("specDirectory") || ".kiro/specs";
+      const specBaseDir = config.get<string>("specDirectory") || ".akira/specs";
       const specDirs: string[] = [];
 
       try {

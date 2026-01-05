@@ -369,7 +369,7 @@ describe("VS Code Extension Integration Tests", () => {
 
       // Verify task status updated
       const updatedState = JSON.parse(
-        fs.readFileSync(path.join(result.directory, ".state.json"), "utf-8")
+        fs.readFileSync(path.join(result.directory, "state.json"), "utf-8")
       );
       expect(updatedState.taskStatuses["1.1"]).toBe("in-progress");
     });
@@ -386,7 +386,7 @@ describe("VS Code Extension Integration Tests", () => {
           "copilotSpec.specDirectory"
         ];
       expect(specDirConfig).toBeDefined();
-      expect(specDirConfig.default).toBe(".kiro/specs");
+      expect(specDirConfig.default).toBe(".akira/specs");
       expect(specDirConfig.type).toBe("string");
     });
 
@@ -705,13 +705,13 @@ describe("VS Code Extension Integration Tests", () => {
         // Verify states are independent
         const readState1 = JSON.parse(
           fs.readFileSync(
-            path.join(workspace1, ".kiro", "specs", featureName, ".state.json"),
+            path.join(workspace1, ".akira", "specs", featureName, "state.json"),
             "utf-8"
           )
         );
         const readState2 = JSON.parse(
           fs.readFileSync(
-            path.join(workspace2, ".kiro", "specs", featureName, ".state.json"),
+            path.join(workspace2, ".akira", "specs", featureName, "state.json"),
             "utf-8"
           )
         );
@@ -731,8 +731,8 @@ describe("VS Code Extension Integration Tests", () => {
         fs.readFileSync(path.join(process.cwd(), "package.json"), "utf-8")
       );
 
-      expect(packageJson.name).toBe("ai-capabilities-suite-akira");
-      expect(packageJson.displayName).toBe("ACS Akira");
+      expect(packageJson.name).toBe("akira");
+      expect(packageJson.displayName).toBe("Akira");
       expect(packageJson.description).toBeDefined();
       expect(packageJson.version).toBeDefined();
       expect(packageJson.publisher).toBeDefined();

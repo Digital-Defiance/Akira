@@ -625,7 +625,7 @@ export class AutonomousExecutor {
       
       // Show completion message
       if (success) {
-        const message = `✅ Success after ${iterationsUsed} iteration${iterationsUsed > 1 ? 's' : ''}!`;
+        const message = `✅ Success after ${iterationsUsed}/${maxIterations} iteration${iterationsUsed > 1 ? 's' : ''}!`;
         this.log(message);
         
         if (this.outputChannel) {

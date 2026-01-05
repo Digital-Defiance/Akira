@@ -352,7 +352,6 @@ export class ExecutionEngine {
   ): Promise<{ success: boolean; error?: string; retryExhausted?: boolean; retryAttempts?: number; mechanism?: string }> {
     const command = action.command || action.target;
     let lastError: string | undefined;
-    let lastExitCode: number | undefined;
     let retryAttempts = 0;
     let usedRetryMechanism = false;
 
@@ -387,8 +386,6 @@ export class ExecutionEngine {
         }
 
         lastError = result.error;
-        lastExitCode = result.exitCode;
-
         // Check if this is a transient error that should be retried
         const isTransient = this.isTransientError({
           exitCode: result.exitCode,

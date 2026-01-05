@@ -37,7 +37,7 @@ export class ConfigManager {
     if (isVSCodeAvailable()) {
       const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
       return {
-        specDirectory: config.get<string>("specDirectory", ".kiro/specs"),
+        specDirectory: config.get<string>("specDirectory", ".akira/specs"),
         strictMode: config.get<boolean>("strictMode", false),
         propertyTestIterations: config.get<number>("propertyTestIterations", 100),
       };
@@ -45,7 +45,7 @@ export class ConfigManager {
     
     // Fallback to environment variables when vscode is not available
     return {
-      specDirectory: process.env.SPEC_DIRECTORY || ".kiro/specs",
+      specDirectory: process.env.SPEC_DIRECTORY || ".akira/specs",
       strictMode: process.env.STRICT_MODE === "true",
       propertyTestIterations: parseInt(process.env.PROPERTY_TEST_ITERATIONS || "100", 10),
     };

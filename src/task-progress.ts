@@ -79,7 +79,7 @@ export function calculateTaskProgress(
     const specDir = getSpecDirectoryPath(
       featureName,
       workspaceRoot,
-      ".kiro/specs"
+      ".akira/specs"
     );
     const tasksPath = path.join(specDir, "tasks.md");
 

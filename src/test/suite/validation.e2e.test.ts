@@ -15,7 +15,7 @@ suite("Validation E2E Tests", () => {
 
   suiteSetup(async () => {
     testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "akira-validation-"));
-    specDir = path.join(testWorkspace, ".kiro", "specs");
+    specDir = path.join(testWorkspace, ".akira", "specs");
     fs.mkdirSync(specDir, { recursive: true });
 
     const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
@@ -307,7 +307,7 @@ Simple calculator service
     // Set valid configuration
     await config.update(
       "specDirectory",
-      ".kiro/specs",
+      ".akira/specs",
       vscode.ConfigurationTarget.Workspace
     );
     await config.update(
@@ -322,7 +322,7 @@ Simple calculator service
     );
 
     // Verify configuration
-    assert.strictEqual(config.get("specDirectory"), ".kiro/specs");
+    assert.strictEqual(config.get("specDirectory"), ".akira/specs");
     assert.strictEqual(config.get("strictMode"), false);
     assert.strictEqual(config.get("propertyTestIterations"), 100);
   });

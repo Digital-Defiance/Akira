@@ -4,7 +4,7 @@
 set -e  # Exit on error
 
 echo "🗑️  Uninstalling current extension..."
-code --uninstall-extension DigitalDefiance.ai-capabilities-suite-akira || echo "Extension not installed or already uninstalled"
+code --uninstall-extension DigitalDefiance.akira || echo "Extension not installed or already uninstalled"
 
 echo "🔨 Building extension..."
 npm run build

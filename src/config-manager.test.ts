@@ -27,7 +27,7 @@ describe("ConfigManager", () => {
   describe("Property Tests", () => {
     it("Property 21: Custom directory configuration", () => {
       // **Feature: copilot-spec-extension, Property 21: Custom directory configuration**
-      // For any custom spec directory configured in settings, all spec operations should use that directory instead of the default `.kiro/specs`.
+      // For any custom spec directory configured in settings, all spec operations should use that directory instead of the default `.akira/specs`.
 
       fc.assert(
         fc.property(
@@ -80,7 +80,7 @@ describe("ConfigManager", () => {
           const mockConfig = {
             get: vi.fn((key: string, defaultValue?: any) => {
               if (key === "specDirectory") {
-                return ".kiro/specs";
+                return ".akira/specs";
               }
               if (key === "strictMode") {
                 return strictModeEnabled;
@@ -222,7 +222,7 @@ describe("ConfigManager", () => {
 
       const config = ConfigManager.getConfig();
 
-      expect(config.specDirectory).toBe(".kiro/specs");
+      expect(config.specDirectory).toBe(".akira/specs");
       expect(config.strictMode).toBe(false);
       expect(config.propertyTestIterations).toBe(100);
     });

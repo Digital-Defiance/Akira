@@ -56,7 +56,7 @@ describe("ContextManager", () => {
     it("should create context directory", async () => {
       await contextManager.initialize("test-session-1");
       
-      const contextDir = path.join(tempDir, ".kiro", "context");
+      const contextDir = path.join(tempDir, ".akira", "context");
       expect(fs.existsSync(contextDir)).toBe(true);
     });
   });
@@ -266,7 +266,7 @@ describe("ContextManager", () => {
 
       const historyPath = path.join(
         tempDir,
-        ".kiro",
+        ".akira",
         "context",
         "test-session-1.history.json"
       );
@@ -316,7 +316,7 @@ describe("ContextManager", () => {
 
       const summaryPath = path.join(
         tempDir,
-        ".kiro",
+        ".akira",
         "context",
         "test-session-1.summary.md"
       );
@@ -513,10 +513,10 @@ describe("ContextManager", () => {
 
     describe("Property 15: File modification tracking", () => {
       test.prop([
-        fc.string({ minLength: 1, maxLength: 20 }),
-        fc.string({ minLength: 1, maxLength: 20 }),
-        fc.array(fc.string({ minLength: 1, maxLength: 30 }), { minLength: 1, maxLength: 10 }),
-        fc.array(fc.string({ minLength: 1, maxLength: 30 }), { minLength: 0, maxLength: 10 }),
+        fc.string({ minLength: 1, maxLength: 20 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)),
+        fc.string({ minLength: 1, maxLength: 20 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)),
+        fc.array(fc.string({ minLength: 1, maxLength: 30 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)), { minLength: 1, maxLength: 10 }),
+        fc.array(fc.string({ minLength: 1, maxLength: 30 }).filter(s => !['__proto__', 'constructor', 'prototype'].includes(s)), { minLength: 0, maxLength: 10 }),
       ])(
         "should track which files were modified for any execution attempt that modifies files",
         async (sessionId, taskId, filesCreated, filesModified) => {

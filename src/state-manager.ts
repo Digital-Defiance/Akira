@@ -12,14 +12,14 @@ import { getSpecDirectoryPath } from "./spec-directory";
  * Get the path to the state file for a spec
  * @param featureName - The feature name
  * @param workspaceRoot - The workspace root path (optional)
- * @returns The full path to the .state.json file
+ * @returns The full path to the state.json file
  */
 export function getStatePath(
   featureName: string,
   workspaceRoot?: string
 ): string {
   const specDir = getSpecDirectoryPath(featureName, workspaceRoot);
-  return path.join(specDir, ".state.json");
+  return path.join(specDir, "state.json");
 }
 
 /**
@@ -64,13 +64,17 @@ export function readState(
     const state = JSON.parse(content) as SpecState;
 
     // Validate the state has required fields
-    if (
-      !state.featureName ||
-      !state.currentPhase ||
-      !state.approvals ||
-      !state.taskStatuses
-    ) {
-      throw new Error("Invalid state file format");
+    if (!state.featureName) {
+      throw new Error(`Invalid state file format: missing featureName`);
+    }
+    if (!state.currentPhase) {
+      throw new Error(`Invalid state file format: missing currentPhase`);
+    }
+    if (!state.approvals) {
+      throw new Error(`Invalid state file format: missing approvals`);
+    }
+    if (!state.taskStatuses) {
+      throw new Error(`Invalid state file format: missing taskStatuses`);
     }
 
     return state;

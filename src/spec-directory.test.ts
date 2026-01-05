@@ -33,7 +33,7 @@ describe("Spec Directory Management - Property Tests", () => {
   it("Property 1: Spec directory creation", () => {
     // **Feature: copilot-spec-extension, Property 1: Spec directory creation**
     // For any spec creation command with a feature name, executing the command
-    // should result in a directory at `.kiro/specs/{kebab-case-name}` containing
+    // should result in a directory at `.akira/specs/{kebab-case-name}` containing
     // a `requirements.md` file.
     // **Validates: Requirements 1.1, 1.3, 1.5**
 
@@ -54,7 +54,7 @@ describe("Spec Directory Management - Property Tests", () => {
 
           // Directory should exist at expected path
           const kebabName = toKebabCase(featureName);
-          const expectedPath = path.join(tempDir, ".kiro/specs", kebabName);
+          const expectedPath = path.join(tempDir, ".akira/specs", kebabName);
           expect(fs.existsSync(expectedPath)).toBe(true);
 
           // requirements.md should exist
@@ -176,7 +176,7 @@ describe("Spec Directory Management - Unit Tests", () => {
 
     it("should correctly identify which files exist", () => {
       createSpecDirectory("test-spec", tempDir);
-      const specDir = path.join(tempDir, ".kiro/specs/test-spec");
+      const specDir = path.join(tempDir, ".akira/specs/test-spec");
 
       // Create design.md
       fs.writeFileSync(path.join(specDir, "design.md"), "# Design");

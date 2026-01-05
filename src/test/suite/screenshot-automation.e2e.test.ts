@@ -45,7 +45,7 @@ suite("Screenshot Automation Suite", function() {
     workspaceRoot = workspaceFolders[0].uri.fsPath;
 
     // Ensure extension is activated
-    const extension = vscode.extensions.getExtension("DigitalDefiance.ai-capabilities-suite-akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }
@@ -59,7 +59,7 @@ suite("Screenshot Automation Suite", function() {
 
   test("1. Capture Sidebar - Specs Tree View", async () => {
     // Open the Akira sidebar
-    await vscode.commands.executeCommand('workbench.view.extension.akira-sidebar');
+    await vscode.commands.executeCommand('workbench.view.extension.akira-specs');
     await wait(1500);
 
     // Refresh specs to show current state
@@ -97,7 +97,7 @@ suite("Screenshot Automation Suite", function() {
 
   test("4. Capture Requirements Document", async () => {
     // Try to find and open a requirements document
-    const specsDir = path.join(workspaceRoot, '.kiro', 'specs');
+    const specsDir = path.join(workspaceRoot, '.akira', 'specs');
     
     if (fs.existsSync(specsDir)) {
       const specs = fs.readdirSync(specsDir);
@@ -117,7 +117,7 @@ suite("Screenshot Automation Suite", function() {
   });
 
   test("5. Capture Design Document", async () => {
-    const specsDir = path.join(workspaceRoot, '.kiro', 'specs');
+    const specsDir = path.join(workspaceRoot, '.akira', 'specs');
     
     if (fs.existsSync(specsDir)) {
       const specs = fs.readdirSync(specsDir);
@@ -137,7 +137,7 @@ suite("Screenshot Automation Suite", function() {
   });
 
   test("6. Capture Tasks Document with CodeLens", async () => {
-    const specsDir = path.join(workspaceRoot, '.kiro', 'specs');
+    const specsDir = path.join(workspaceRoot, '.akira', 'specs');
     
     if (fs.existsSync(specsDir)) {
       const specs = fs.readdirSync(specsDir);
@@ -176,7 +176,7 @@ suite("Screenshot Automation Suite", function() {
 
   test("9. Capture EARS Validation", async () => {
     // Open a requirements document
-    const specsDir = path.join(workspaceRoot, '.kiro', 'specs');
+    const specsDir = path.join(workspaceRoot, '.akira', 'specs');
     
     if (fs.existsSync(specsDir)) {
       const specs = fs.readdirSync(specsDir);
@@ -203,7 +203,7 @@ suite("Screenshot Automation Suite", function() {
   });
 
   test("10. Capture Property-Based Testing Properties", async () => {
-    const specsDir = path.join(workspaceRoot, '.kiro', 'specs');
+    const specsDir = path.join(workspaceRoot, '.akira', 'specs');
     
     if (fs.existsSync(specsDir)) {
       const specs = fs.readdirSync(specsDir);

@@ -17,6 +17,27 @@ import {
 } from "./types";
 
 /**
+ * Get the base directory for execution files (.akira or .kiro for backwards compatibility)
+ */
+function getExecutionBaseDirectory(workspaceRoot: string): string {
+  const akiraDir = path.join(workspaceRoot, ".akira");
+  const kiroDir = path.join(workspaceRoot, ".kiro");
+  
+  // If .akira exists, use it
+  if (fs.existsSync(akiraDir)) {
+    return ".akira";
+  }
+  
+  // If .kiro exists (backwards compatibility), use it
+  if (fs.existsSync(kiroDir)) {
+    return ".kiro";
+  }
+  
+  // Neither exists, use preferred (.akira)
+  return ".akira";
+}
+
+/**
  * Context entry in conversation history
  */
 export interface ContextEntry {
@@ -80,8 +101,12 @@ export class ContextManager {
     limits: Partial<ContextLimits> = {}
   ) {
     this.storage = new StorageLayer(workspaceRoot);
-    this.contextDir = path.join(".kiro", "context");
-    this.failuresDir = path.join(".kiro", "sessions");
+    
+    // Use .akira or .kiro for backwards compatibility
+    const baseDir = getExecutionBaseDirectory(workspaceRoot);
+    this.contextDir = path.join(baseDir, "context");
+    this.failuresDir = path.join(baseDir, "sessions");
+    
     this.limits = { ...DEFAULT_LIMITS, ...limits };
     this.decisionEngine = new DecisionEngine(workspaceRoot);
   }
@@ -446,15 +471,25 @@ export class ContextManager {
     await this.storage.ensureDir(path.dirname(failuresPath));
     
     // Load existing failures data
-    let failuresData: any = { sessionId, tasks: {} };
+    let failuresData: any = { sessionId, tasks: Object.create(null) };
     if (await this.storage.exists(failuresPath)) {
       const content = await this.storage.readFile(failuresPath);
-      failuresData = JSON.parse(content);
+      const parsed = JSON.parse(content);
+      // Ensure tasks is a null-prototype object to avoid __proto__ issues
+      failuresData = {
+        sessionId: parsed.sessionId,
+        tasks: Object.create(null)
+      };
+      if (parsed.tasks) {
+        Object.keys(parsed.tasks).forEach(key => {
+          failuresData.tasks[key] = parsed.tasks[key];
+        });
+      }
     }
     
     // Ensure tasks object exists
     if (!failuresData.tasks) {
-      failuresData.tasks = {};
+      failuresData.tasks = Object.create(null);
     }
     
     // Initialize task entry if needed (use Object.prototype.hasOwnProperty to avoid prototype pollution)
@@ -465,8 +500,12 @@ export class ContextManager {
       };
     }
     
-    // Add the attempt
-    failuresData.tasks[taskId].attempts.push(attempt);
+    // Add the attempt - use bracket notation to safely access even with __proto__
+    const taskData = failuresData.tasks[taskId];
+    if (!taskData.attempts) {
+      taskData.attempts = [];
+    }
+    taskData.attempts.push(attempt);
     
     // Save back to disk
     await this.storage.writeFileAtomic(failuresPath, JSON.stringify(failuresData, null, 2));
@@ -493,7 +532,9 @@ export class ContextManager {
       return [];
     }
     
-    return failuresData.tasks[taskId]?.attempts || [];
+    // Safely access the task data
+    const taskData = failuresData.tasks[taskId];
+    return (taskData && Array.isArray(taskData.attempts)) ? taskData.attempts : [];
   }
 
   /**
@@ -574,8 +615,7 @@ export class ContextManager {
    * Evaluate task after execution
    */
   async evaluateAfterExecution(
-    task: TaskRecord,
-    sessionId: string
+    task: TaskRecord
   ): Promise<DecisionResult> {
     return await this.decisionEngine.evaluateTask(task, task.successCriteria);
   }

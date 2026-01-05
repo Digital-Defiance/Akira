@@ -40,7 +40,7 @@ describe("State Management - Property Tests", () => {
   it("Property 17: State persistence", () => {
     // **Feature: copilot-spec-extension, Property 17: State persistence**
     // For any workflow state change (phase transition, task completion, approval),
-    // the .state.json file should be updated to reflect the new state.
+    // the state.json file should be updated to reflect the new state.
     // **Validates: Requirements 7.3**
 
     let counter = 0;
@@ -99,8 +99,8 @@ describe("State Management - Property Tests", () => {
 
           // Test 4: State file should exist
           const kebabName = toKebabCase(featureName);
-          const specDir = path.join(tempDir, ".kiro/specs", kebabName);
-          const statePath = path.join(specDir, ".state.json");
+          const specDir = path.join(tempDir, ".akira/specs", kebabName);
+          const statePath = path.join(specDir, "state.json");
           expect(fs.existsSync(statePath)).toBe(true);
 
           // Test 5: State file should be valid JSON
@@ -164,7 +164,7 @@ describe("State Management - Unit Tests", () => {
       createSpecDirectory("test-feature", tempDir);
       const statePath = path.join(
         tempDir,
-        ".kiro/specs/test-feature/.state.json"
+        ".akira/specs/test-feature/state.json"
       );
 
       // Write invalid JSON

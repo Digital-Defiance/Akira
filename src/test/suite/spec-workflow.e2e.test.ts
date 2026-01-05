@@ -14,8 +14,15 @@ suite("Spec Workflow E2E Tests", () => {
   let specDir: string;
 
   suiteSetup(async () => {
-    testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "akira-workflow-"));
-    specDir = path.join(testWorkspace, ".kiro", "specs");
+    // Use the VS Code workspace folder instead of creating a new temp directory
+    const vsCodeWorkspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    
+    if (!vsCodeWorkspace) {
+      throw new Error('No VS Code workspace folder found! Tests require a workspace to be open.');
+    }
+    
+    testWorkspace = vsCodeWorkspace;
+    specDir = path.join(testWorkspace, ".akira", "specs");
     fs.mkdirSync(specDir, { recursive: true });
 
     const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
@@ -25,8 +32,9 @@ suite("Spec Workflow E2E Tests", () => {
   });
 
   suiteTeardown(() => {
-    if (fs.existsSync(testWorkspace)) {
-      fs.rmSync(testWorkspace, { recursive: true, force: true });
+    // Clean up the specs directory but not the workspace itself
+    if (fs.existsSync(specDir)) {
+      fs.rmSync(specDir, { recursive: true, force: true });
     }
   });
 
@@ -125,6 +133,7 @@ suite("Spec Workflow E2E Tests", () => {
         design: false,
         tasks: false,
       },
+      taskStatuses: {},
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -202,7 +211,8 @@ suite("Spec Workflow E2E Tests", () => {
         requirements: false,
         design: false,
         tasks: false,
-      },
+          },
+          taskStatuses: {},
     };
 
     fs.writeFileSync(
@@ -275,7 +285,8 @@ suite("Spec Workflow E2E Tests", () => {
         requirements: true,
         design: false,
         tasks: false,
-      },
+          },
+          taskStatuses: {},
     };
 
     fs.writeFileSync(

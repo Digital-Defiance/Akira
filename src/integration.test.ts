@@ -129,7 +129,7 @@ describe("Integration Tests", () => {
       expect(fs.existsSync(path.join(specDir, "requirements.md"))).toBe(true);
       expect(fs.existsSync(path.join(specDir, "design.md"))).toBe(true);
       expect(fs.existsSync(path.join(specDir, "tasks.md"))).toBe(true);
-      expect(fs.existsSync(path.join(specDir, ".state.json"))).toBe(true);
+      expect(fs.existsSync(path.join(specDir, "state.json"))).toBe(true);
     });
 
     it("should enforce workflow phase order", () => {
@@ -310,7 +310,7 @@ describe("Integration Tests", () => {
       expect(result.success).toBe(true);
 
       // Write corrupted state
-      const stateFile = path.join(result.directory, ".state.json");
+      const stateFile = path.join(result.directory, "state.json");
       fs.writeFileSync(stateFile, "{ invalid json }");
 
       // Reading should return null for corrupted state

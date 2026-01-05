@@ -20,7 +20,7 @@ import { updateTaskStatus } from "./state-manager";
 export async function executeNextTaskWithValidation(
   featureName: string,
   workspaceRoot: string,
-  specDirectory: string = ".kiro/specs"
+  specDirectory: string = ".akira/specs"
 ): Promise<{
   taskId: string;
   action: "already-complete" | "needs-execution" | "no-task";
@@ -91,7 +91,7 @@ export async function executeNextTaskWithValidation(
 export async function validateAllIncompleteTasks(
   featureName: string,
   workspaceRoot: string,
-  specDirectory: string = ".kiro/specs"
+  specDirectory: string = ".akira/specs"
 ): Promise<{
   alreadyComplete: string[];
   needsWork: string[];
@@ -133,7 +133,7 @@ export async function validateAllIncompleteTasks(
 export async function autonomousExecutionLoop(
   featureName: string,
   workspaceRoot: string,
-  specDirectory: string = ".kiro/specs"
+  specDirectory: string = ".akira/specs"
 ): Promise<void> {
   console.log(`Starting autonomous execution for ${featureName}...`);
 

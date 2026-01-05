@@ -344,7 +344,7 @@ export class SpecTreeProvider
         vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ||
         "";
       const config = vscode.workspace.getConfiguration("copilotSpec");
-      const specBaseDir = config.get<string>("specDirectory") || ".kiro/specs";
+      const specBaseDir = config.get<string>("specDirectory") || ".akira/specs";
       const tasksPath = `${workspaceRoot}/${specBaseDir}/${featureName}/tasks.md`;
 
       const fs = require("fs");

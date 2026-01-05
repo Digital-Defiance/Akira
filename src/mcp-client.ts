@@ -40,7 +40,7 @@ export class SpecMCPClient extends BaseMCPClient {
   protected getServerCommand(): { command: string; args: string[] } {
     // Get the extension path
     const extensionPath = vscode.extensions.getExtension(
-      "DigitalDefiance.ai-capabilities-suite-akira"
+      "DigitalDefiance.akira"
     )?.extensionPath;
     if (!extensionPath) {
       throw new Error("Extension path not found");
@@ -161,6 +161,28 @@ export class SpecMCPClient extends BaseMCPClient {
       featureName,
       taskId,
       status,
+    });
+  }
+
+  /**
+   * Validate a specific phase
+   */
+  async validatePhase(
+    featureName: string,
+    phase: "requirements" | "design" | "tasks"
+  ): Promise<any> {
+    return await this.callTool("validate_phase", {
+      featureName,
+      phase,
+    });
+  }
+
+  /**
+   * Validate an entire spec
+   */
+  async validateSpec(featureName: string): Promise<any> {
+    return await this.callTool("validate_spec", {
+      featureName,
     });
   }
 }

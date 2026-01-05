@@ -145,7 +145,7 @@ describe("AutonomousExecutor", () => {
       enableLLM: true,
     };
 
-    autonomousExecutor = new AutonomousExecutor(workspaceRoot, ".kiro/specs", config);
+    autonomousExecutor = new AutonomousExecutor(workspaceRoot, ".akira/specs", config);
   });
 
   afterEach(() => {
@@ -552,7 +552,7 @@ describe("AutonomousExecutor", () => {
 
   describe("configuration", () => {
     it("should use default configuration", () => {
-      const executor = new AutonomousExecutor(workspaceRoot, ".kiro/specs");
+      const executor = new AutonomousExecutor(workspaceRoot, ".akira/specs");
 
       expect(executor).toBeDefined();
     });
@@ -564,7 +564,7 @@ describe("AutonomousExecutor", () => {
         maxTasksPerSession: 200,
       };
 
-      const executor = new AutonomousExecutor(workspaceRoot, ".kiro/specs", customConfig);
+      const executor = new AutonomousExecutor(workspaceRoot, ".akira/specs", customConfig);
 
       expect(executor).toBeDefined();
     });

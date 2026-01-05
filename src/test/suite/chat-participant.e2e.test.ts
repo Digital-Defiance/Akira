@@ -14,8 +14,15 @@ suite("Chat Participant E2E Tests", () => {
   let specDir: string;
 
   suiteSetup(async () => {
-    testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "akira-chat-"));
-    specDir = path.join(testWorkspace, ".kiro", "specs");
+    // Use the VS Code workspace folder instead of creating a new temp directory
+    const vsCodeWorkspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    
+    if (!vsCodeWorkspace) {
+      throw new Error('No VS Code workspace folder found! Tests require a workspace to be open.');
+    }
+    
+    testWorkspace = vsCodeWorkspace;
+    specDir = path.join(testWorkspace, ".akira", "specs");
     fs.mkdirSync(specDir, { recursive: true });
 
     const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
@@ -24,9 +31,23 @@ suite("Chat Participant E2E Tests", () => {
     }
   });
 
+  setup(() => {
+    // Clean spec directory before each test
+    if (fs.existsSync(specDir)) {
+      const files = fs.readdirSync(specDir);
+      for (const file of files) {
+        const filePath = path.join(specDir, file);
+        if (fs.existsSync(filePath)) {
+          fs.rmSync(filePath, { recursive: true, force: true });
+        }
+      }
+    }
+  });
+
   suiteTeardown(() => {
-    if (fs.existsSync(testWorkspace)) {
-      fs.rmSync(testWorkspace, { recursive: true, force: true });
+    // Clean up the specs directory but not the workspace itself
+    if (fs.existsSync(specDir)) {
+      fs.rmSync(specDir, { recursive: true, force: true });
     }
   });
 
@@ -69,7 +90,8 @@ suite("Chat Participant E2E Tests", () => {
         requirements: false,
         design: false,
         tasks: false,
-      },
+          },
+          taskStatuses: {},
       createdAt: new Date().toISOString(),
     };
 
@@ -115,7 +137,8 @@ suite("Chat Participant E2E Tests", () => {
           requirements: false,
           design: false,
           tasks: false,
-        },
+          },
+          taskStatuses: {},
       };
 
       fs.writeFileSync(
@@ -165,7 +188,8 @@ suite("Chat Participant E2E Tests", () => {
         requirements: true,
         design: false,
         tasks: false,
-      },
+          },
+          taskStatuses: {},
       createdAt: "2024-01-01T00:00:00.000Z",
       updatedAt: "2024-01-02T00:00:00.000Z",
     };
@@ -240,7 +264,8 @@ suite("Chat Participant E2E Tests", () => {
         requirements: false,
         design: false,
         tasks: false,
-      },
+          },
+          taskStatuses: {},
     };
 
     fs.writeFileSync(
@@ -313,7 +338,7 @@ suite("Chat Participant E2E Tests", () => {
     this.timeout(3000);
 
     // Verify MCP configuration structure
-    const mcpConfigPath = path.join(testWorkspace, ".kiro", "settings", "mcp.json");
+    const mcpConfigPath = path.join(testWorkspace, ".akira", "settings", "mcp.json");
     const mcpDir = path.dirname(mcpConfigPath);
 
     if (!fs.existsSync(mcpDir)) {
@@ -509,7 +534,8 @@ Implements FR-1 and FR-2 using JWT and JSON Schema.
           requirements: false,
           design: false,
           tasks: false,
-        },
+          },
+          taskStatuses: {},
       };
 
       fs.writeFileSync(

@@ -718,13 +718,18 @@ export async function routeCommand(
           : parsedList;
 
         // Find the spec
+        if (!command.featureName) {
+          throw new Error("Feature name is required for continue command");
+        }
+        const featureName = command.featureName as string;
+
         const spec = listContent?.specs?.find(
-          (s: any) => s.featureName === command.featureName
+          (s: any) => s.featureName === featureName
         );
 
         if (!spec) {
           throw new Error(
-            `Spec "${command.featureName}" not found. Use @spec list to see available specs.`
+            `Spec "${featureName}" not found. Use @spec list to see available specs.`
           );
         }
 
@@ -733,7 +738,7 @@ export async function routeCommand(
           try {
             // Read requirements
             const reqResult = await mcpClient.readSpec(
-              command.featureName,
+              featureName,
               "requirements"
             );
             const reqContent =
@@ -754,7 +759,7 @@ export async function routeCommand(
               },
               async () => {
                 return await generateDesignWithLLM(
-                  command.featureName,
+                  featureName,
                   parsedReq.content || ""
                 );
               }
@@ -763,19 +768,19 @@ export async function routeCommand(
             if (designContent) {
               // Update spec with design
               await mcpClient.updateSpec(
-                command.featureName,
+                featureName,
                 "design",
                 designContent
               );
 
               vscode.window.showInformationMessage(
-                `✅ Generated design for ${command.featureName}`
+                `✅ Generated design for ${featureName}`
               );
 
               return {
                 success: true,
                 action: "continue",
-                featureName: command.featureName,
+                featureName: featureName,
                 currentPhase: "design",
                 hasRequirements: true,
                 hasDesign: true,
@@ -1023,7 +1028,7 @@ async function handleAutonomousExecution(
   }
 
   const config = vscode.workspace.getConfiguration("copilotSpec");
-  const specDirectory = config.get<string>("specDirectory") || ".kiro/specs";
+  const specDirectory = config.get<string>("specDirectory") || ".akira/specs";
 
   stream.markdown(
     `🤖 **Starting Autonomous Execution**\n\n` +

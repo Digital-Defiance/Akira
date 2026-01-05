@@ -44,7 +44,7 @@ describe("Task Progress Calculation", () => {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-    const specDir = path.join(testDir, ".kiro", "specs", kebabName);
+    const specDir = path.join(testDir, ".akira", "specs", kebabName);
     fs.mkdirSync(specDir, { recursive: true });
 
     const tasksPath = path.join(specDir, "tasks.md");

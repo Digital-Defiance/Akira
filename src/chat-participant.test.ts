@@ -246,7 +246,7 @@ describe("Chat Participant Property Tests", () => {
     const testCases = [
       {
         message:
-          'agent-hooks "Implement an agent hooks system for event-triggered automation. Hooks should trigger on file save, git commit, and other VS Code events, executing predefined prompts automatically in the background. Include hooks configuration file (.kiro/hooks.json), event listener registration, and hook execution engine."',
+          'agent-hooks "Implement an agent hooks system for event-triggered automation. Hooks should trigger on file save, git commit, and other VS Code events, executing predefined prompts automatically in the background. Include hooks configuration file (.akira/hooks.json), event listener registration, and hook execution engine."',
         expectedAction: "create",
         expectedName: "agent-hooks",
       },
@@ -440,8 +440,8 @@ describe("Response Formatting Property Tests", () => {
         result: {
           success: true,
           featureName: "test-feature",
-          directory: ".kiro/specs/test-feature",
-          requirementsPath: ".kiro/specs/test-feature/requirements.md",
+          directory: ".akira/specs/test-feature",
+          requirementsPath: ".akira/specs/test-feature/requirements.md",
           message: "Created successfully",
         },
         expectedContains: ["✅", "test-feature", "Created successfully"],
@@ -454,7 +454,7 @@ describe("Response Formatting Property Tests", () => {
           specs: [
             {
               featureName: "feature-1",
-              directory: ".kiro/specs/feature-1",
+              directory: ".akira/specs/feature-1",
               currentPhase: "requirements",
               hasRequirements: true,
               hasDesign: false,
@@ -644,8 +644,8 @@ describe("Chat Participant Unit Tests", () => {
       const result = {
         success: true,
         featureName: "test-feature",
-        directory: ".kiro/specs/test-feature",
-        requirementsPath: ".kiro/specs/test-feature/requirements.md",
+        directory: ".akira/specs/test-feature",
+        requirementsPath: ".akira/specs/test-feature/requirements.md",
         message: "Spec created",
       };
       const formatted = formatResponse({ action: "create" }, result);
@@ -673,7 +673,7 @@ describe("Chat Participant Unit Tests", () => {
         specs: [
           {
             featureName: "feature-1",
-            directory: ".kiro/specs/feature-1",
+            directory: ".akira/specs/feature-1",
             currentPhase: "requirements",
             hasRequirements: true,
             hasDesign: false,
@@ -681,7 +681,7 @@ describe("Chat Participant Unit Tests", () => {
           },
           {
             featureName: "feature-2",
-            directory: ".kiro/specs/feature-2",
+            directory: ".akira/specs/feature-2",
             currentPhase: "design",
             hasRequirements: true,
             hasDesign: true,

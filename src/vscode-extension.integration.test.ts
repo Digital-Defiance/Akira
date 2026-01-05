@@ -173,7 +173,7 @@ describe("VS Code Extension Integration Tests", () => {
 
     it("should provide default values when config is missing", () => {
       const specDir = ConfigManager.getSpecDirectory();
-      expect(specDir).toBe(".kiro/specs");
+      expect(specDir).toBe(".akira/specs");
     });
   });
 

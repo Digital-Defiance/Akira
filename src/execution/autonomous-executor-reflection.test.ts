@@ -38,7 +38,7 @@ describe("AutonomousExecutor Reflection Integration", () => {
       capturedEvents.push(event);
     });
 
-    autonomousExecutor = new AutonomousExecutor(workspaceRoot, ".kiro/specs", {
+    autonomousExecutor = new AutonomousExecutor(workspaceRoot, ".akira/specs", {
       maxConcurrentTasks: 3,
       enableLLM: true,
     });

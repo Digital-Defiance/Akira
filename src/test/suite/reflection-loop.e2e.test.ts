@@ -80,7 +80,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 5000));
 
         // Check if session was created
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           assert.ok(sessions.length > 0, "Session should be created");
@@ -139,7 +139,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 6000));
 
         // Verify session tracking
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {
@@ -231,7 +231,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 8000));
 
         // Check for persistent failure detection in logs
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {
@@ -306,7 +306,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 7000));
 
         // Verify failure context is being tracked
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {
@@ -379,7 +379,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 6000));
 
         // Verify the system is ready to accept user guidance
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           assert.ok(
@@ -431,7 +431,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Verify only single attempt was made
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {
@@ -499,7 +499,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Should not crash, should use defaults
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           assert.ok(
@@ -553,7 +553,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 5000));
 
         // Verify iteration limit was respected
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {
@@ -617,7 +617,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 10000));
 
         // Verify multiple tasks were tracked
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {
@@ -671,7 +671,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 4000));
 
         // Verify persistence files exist
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {
@@ -734,7 +734,7 @@ suite("Reflection Loop E2E Test Suite", () => {
         await new Promise((resolve) => setTimeout(resolve, 5000));
 
         // Verify metrics are being tracked
-        const sessionsDir = path.join(testWorkspace, ".kiro", "sessions");
+        const sessionsDir = path.join(testWorkspace, ".akira", "sessions");
         if (fs.existsSync(sessionsDir)) {
           const sessions = fs.readdirSync(sessionsDir);
           if (sessions.length > 0) {

@@ -1,6 +1,6 @@
 {
   "name": "akira",
-  "displayName": "ACS Akira",
+  "displayName": "Akira",
   "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing",
   "version": "0.1.7",
   "publisher": "DigitalDefiance",
@@ -256,7 +256,7 @@
       "properties": {
         "copilotSpec.specDirectory": {
           "type": "string",
-          "default": ".kiro/specs",
+          "default": ".akira/specs",
           "description": "Directory where spec files are stored",
           "scope": "workspace"
         },
@@ -272,6 +272,20 @@
           "minimum": 10,
           "maximum": 10000,
           "description": "Number of iterations for property-based tests",
+          "scope": "workspace"
+        },
+        "copilotSpec.reflectionEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable reflection loop for autonomous execution",
+          "scope": "workspace"
+        },
+        "copilotSpec.reflectionMaxIterations": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of reflection iterations",
           "scope": "workspace"
         },
         "copilotSpec.autoApprove": {
@@ -318,6 +332,7 @@
     "test:integration": "NODE_OPTIONS='--max-old-space-size=8192' vitest --run src/execution-engine.integration.test.ts --pool=forks --poolOptions.forks.singleFork=false",
     "test:watch": "vitest",
     "test:e2e": "node ./dist/test/runTest.js",
+    "test:all": "yarn test && yarn test:integration && yarn test:e2e",
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {

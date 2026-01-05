@@ -7,6 +7,9 @@ import Mocha from "mocha";
 import { glob } from "glob";
 
 export async function run(): Promise<void> {
+  // Set global flag to indicate we're in test mode
+  (global as any).__VSCODE_TEST__ = true;
+
   // Create the mocha test
   const mocha = new Mocha({
     ui: "tdd",

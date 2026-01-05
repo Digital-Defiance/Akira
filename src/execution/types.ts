@@ -62,6 +62,7 @@ export interface SuccessCriteria {
 export interface TaskRecord {
   id: string;
   title: string;
+  description?: string;
   rawLine: number;
   checkboxState: CheckboxState;
   completionTimestamp?: string;

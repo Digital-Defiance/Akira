@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 
 interface TestFunction {
-  line: number;
+  _line: number;
   name: string;
   range: vscode.Range;
 }
@@ -45,7 +45,7 @@ export class TestCodeLensProvider implements vscode.CodeLensProvider {
         new vscode.CodeLens(test.range, {
           title: "▶ Run Test",
           command: "akira.runTest",
-          arguments: [document.uri, test.name, test.line],
+          arguments: [document.uri, test.name, test._line],
         })
       );
 
@@ -54,7 +54,7 @@ export class TestCodeLensProvider implements vscode.CodeLensProvider {
         new vscode.CodeLens(test.range, {
           title: "🐛 Debug Test",
           command: "akira.debugTest",
-          arguments: [document.uri, test.name, test.line],
+          arguments: [document.uri, test.name, test._line],
         })
       );
     }
@@ -112,7 +112,7 @@ export class TestCodeLensProvider implements vscode.CodeLensProvider {
           );
 
           tests.push({
-            line: i,
+            _line: i,
             name: `${testType}: ${testName}`,
             range,
           });
@@ -133,7 +133,7 @@ export async function runTest(
   testName: string,
   line: number
 ): Promise<void> {
-  const document = await vscode.workspace.openTextDocument(uri);
+  await vscode.workspace.openTextDocument(uri);
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
 
   if (!workspaceFolder) {
@@ -170,7 +170,7 @@ export async function runTest(
 export async function debugTest(
   uri: vscode.Uri,
   testName: string,
-  line: number
+  _line: number
 ): Promise<void> {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
 

@@ -37,7 +37,7 @@ export interface SuccessCriteria {
  * Extracts "Success criteria:" section from task details
  */
 export function parseSuccessCriteria(
-  taskContent: string,
+  _taskContent: string,
   taskLines: string[]
 ): SuccessCriteria[] {
   const criteria: SuccessCriteria[] = [];

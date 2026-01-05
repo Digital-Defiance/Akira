@@ -125,7 +125,7 @@ describe("Spec Tree Provider", () => {
       createSpecDirectory("test-feature", testDir);
 
       // Create tasks.md
-      const specDir = path.join(testDir, ".kiro", "specs", "test-feature");
+      const specDir = path.join(testDir, ".akira", "specs", "test-feature");
       const tasksPath = path.join(specDir, "tasks.md");
       const tasksContent = `# Implementation Plan
 

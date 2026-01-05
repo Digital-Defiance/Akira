@@ -4,6 +4,7 @@
  */
 
 import * as path from "path";
+import * as fs from "fs";
 import { StorageLayer } from "./storage-layer";
 import { getEventBus } from "./event-bus";
 import {
@@ -19,6 +20,27 @@ import {
 } from "./types";
 
 /**
+ * Get the base directory for execution files (.akira or .kiro for backwards compatibility)
+ */
+function getExecutionBaseDirectory(workspaceRoot: string): string {
+  const akiraDir = path.join(workspaceRoot, ".akira");
+  const kiroDir = path.join(workspaceRoot, ".kiro");
+  
+  // If .akira exists, use it
+  if (fs.existsSync(akiraDir)) {
+    return ".akira";
+  }
+  
+  // If .kiro exists (backwards compatibility), use it
+  if (fs.existsSync(kiroDir)) {
+    return ".kiro";
+  }
+  
+  // Neither exists, use preferred (.akira)
+  return ".akira";
+}
+
+/**
  * Session Manager handles session lifecycle and persistence
  */
 export class SessionManager {
@@ -26,9 +48,12 @@ export class SessionManager {
   private sessionsDir: string;
   private activeSessions: Map<string, SessionState> = new Map();
 
-  constructor(workspaceRoot: string, specDirectory: string = ".kiro") {
+  constructor(workspaceRoot: string, specDirectory?: string) {
     this.storage = new StorageLayer(workspaceRoot);
-    this.sessionsDir = path.join(specDirectory, "sessions");
+    
+    // Use provided directory or auto-detect
+    const baseDir = specDirectory || getExecutionBaseDirectory(workspaceRoot);
+    this.sessionsDir = path.join(baseDir, "sessions");
   }
 
   /**
