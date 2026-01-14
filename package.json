@@ -1,7 +1,7 @@
 {
-  "name": "akira",
-  "displayName": "Akira",
-  "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing",
+  "name": "acs-akira",
+  "displayName": "ACS Akira",
+  "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing. Part of the Digital Defiance AI Capabilities Suite.",
   "version": "0.1.8",
   "publisher": "DigitalDefiance",
   "author": {
