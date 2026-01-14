@@ -3,8 +3,26 @@
  * Handles reading and managing extension configuration settings
  */
 
-// Import vscode - will be mocked in tests
-import * as vscode from "vscode";
+// Conditionally import vscode only when available
+let vscode: typeof import("vscode") | undefined;
+
+// Allow tests to inject vscode mock
+export function __setVSCodeForTesting(vscodeMock: any) {
+  vscode = vscodeMock;
+}
+
+try {
+  // Try static import first (for tests and extension)
+  vscode = require("vscode");
+} catch {
+  // Fall back to dynamic require (for standalone)
+  try {
+    const requireFunc = eval("require");
+    vscode = requireFunc("vscode");
+  } catch {
+    vscode = undefined;
+  }
+}
 
 export interface ExtensionConfig {
   specDirectory: string;
@@ -16,11 +34,7 @@ export interface ExtensionConfig {
  * Check if vscode is available
  */
 function isVSCodeAvailable(): boolean {
-  try {
-    return !!(vscode && vscode.workspace);
-  } catch {
-    return false;
-  }
+  return !!(vscode && vscode.workspace);
 }
 
 /**
@@ -34,7 +48,7 @@ export class ConfigManager {
    * Get the current extension configuration
    */
   public static getConfig(): ExtensionConfig {
-    if (isVSCodeAvailable()) {
+    if (isVSCodeAvailable() && vscode) {
       const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
       return {
         specDirectory: config.get<string>("specDirectory", ".akira/specs"),
@@ -80,7 +94,7 @@ export class ConfigManager {
   public static onConfigurationChanged(
     callback: (config: ExtensionConfig) => void
   ): { dispose: () => void } {
-    if (!isVSCodeAvailable()) {
+    if (!isVSCodeAvailable() || !vscode) {
       // Return a no-op disposable when vscode is not available
       return { dispose: () => {} };
     }

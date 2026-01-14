@@ -585,7 +585,7 @@ export class ExecutionEngine {
     const startTime = Date.now();
     const previousAttempts: AttemptRecord[] = [];
     let lastResult: ExecutionResult | null = null;
-    let cumulativeEnvironmentState: EnvironmentState = {
+    const cumulativeEnvironmentState: EnvironmentState = {
       filesCreated: [],
       filesModified: [],
       commandOutputs: new Map<string, string>(),

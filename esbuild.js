@@ -42,9 +42,23 @@ async function main() {
     sourcesContent: false,
     platform: "node",
     outfile: "dist/mcp-server-standalone.js",
-    external: ["vscode"], // Mark vscode as external even though it shouldn't be used
     logLevel: "info",
     plugins: [
+      {
+        name: "vscode-stub",
+        setup(build) {
+          // Stub out vscode module for standalone MCP server
+          build.onResolve({ filter: /^vscode$/ }, () => {
+            return { path: "vscode", namespace: "vscode-stub" };
+          });
+          build.onLoad({ filter: /.*/, namespace: "vscode-stub" }, () => {
+            return {
+              contents: "module.exports = {};",
+              loader: "js",
+            };
+          });
+        },
+      },
       {
         name: "watch-plugin",
         setup(build) {

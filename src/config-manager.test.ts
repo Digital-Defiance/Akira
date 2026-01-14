@@ -4,20 +4,21 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fc from "fast-check";
-import { ConfigManager } from "./config-manager";
-import * as vscode from "vscode";
+import { ConfigManager, __setVSCodeForTesting } from "./config-manager";
 
-// Mock vscode
-vi.mock("vscode", () => ({
+// Create mock vscode
+const mockVSCode = {
   workspace: {
     getConfiguration: vi.fn(),
     onDidChangeConfiguration: vi.fn(),
   },
-}));
+};
 
 describe("ConfigManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Inject mock before each test
+    __setVSCodeForTesting(mockVSCode);
   });
 
   afterEach(() => {
@@ -51,7 +52,7 @@ describe("ConfigManager", () => {
               }),
             };
 
-            vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+            vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
               mockConfig as any
             );
 
@@ -92,7 +93,7 @@ describe("ConfigManager", () => {
             }),
           };
 
-          vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+          vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
             mockConfig as any
           );
 
@@ -150,7 +151,7 @@ describe("ConfigManager", () => {
               }),
             };
 
-            vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+            vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
               mockConfig as any
             );
 
@@ -168,7 +169,7 @@ describe("ConfigManager", () => {
             // Set up the configuration change listener
             let listenerCallback: ((config: any) => void) | null = null;
             vi.mocked(
-              vscode.workspace.onDidChangeConfiguration
+              mockVSCode.workspace.onDidChangeConfiguration
             ).mockImplementation((callback: any) => {
               listenerCallback = callback;
               return { dispose: vi.fn() } as any;
@@ -216,7 +217,7 @@ describe("ConfigManager", () => {
         get: vi.fn((key: string, defaultValue?: any) => defaultValue),
       };
 
-      vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+      vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
         mockConfig as any
       );
 
@@ -237,7 +238,7 @@ describe("ConfigManager", () => {
         }),
       };
 
-      vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+      vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
         mockConfig as any
       );
 
@@ -256,7 +257,7 @@ describe("ConfigManager", () => {
         }),
       };
 
-      vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+      vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
         mockConfig as any
       );
 
@@ -272,7 +273,7 @@ describe("ConfigManager", () => {
         }),
       };
 
-      vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+      vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
         mockConfig as any
       );
 
@@ -288,7 +289,7 @@ describe("ConfigManager", () => {
         }),
       };
 
-      vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(
+      vi.mocked(mockVSCode.workspace.getConfiguration).mockReturnValue(
         mockConfig as any
       );
 
@@ -300,13 +301,13 @@ describe("ConfigManager", () => {
       const mockDisposable = { dispose: vi.fn() };
       const mockCallback = vi.fn();
 
-      vi.mocked(vscode.workspace.onDidChangeConfiguration).mockReturnValue(
+      vi.mocked(mockVSCode.workspace.onDidChangeConfiguration).mockReturnValue(
         mockDisposable as any
       );
 
       const disposable = ConfigManager.onConfigurationChanged(mockCallback);
 
-      expect(vscode.workspace.onDidChangeConfiguration).toHaveBeenCalled();
+      expect(mockVSCode.workspace.onDidChangeConfiguration).toHaveBeenCalled();
       expect(disposable).toBe(mockDisposable);
     });
   });

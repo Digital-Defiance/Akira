@@ -2,7 +2,7 @@
   "name": "akira",
   "displayName": "Akira",
   "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "publisher": "DigitalDefiance",
   "author": {
     "name": "Digital Defiance, Jessica Mulein"
