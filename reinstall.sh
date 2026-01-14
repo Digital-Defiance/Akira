@@ -4,13 +4,13 @@
 set -e  # Exit on error
 
 echo "🗑️  Uninstalling current extension..."
-code --uninstall-extension DigitalDefiance.akira || echo "Extension not installed or already uninstalled"
+code --uninstall-extension DigitalDefiance.acs-akira || echo "Extension not installed or already uninstalled"
 
 echo "🔨 Building extension..."
 npm run build
 
 echo "📦 Packaging extension..."
-VSIX_FILE="akira-reinstall-$(date +%Y%m%d-%H%M%S).vsix"
+VSIX_FILE="acs-akira-reinstall-$(date +%Y%m%d-%H%M%S).vsix"
 npx @vscode/vsce package --out "$VSIX_FILE"
 
 echo "📥 Installing extension..."
