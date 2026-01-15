@@ -2,7 +2,7 @@
   "name": "acs-akira",
   "displayName": "ACS Akira",
   "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing. Part of the Digital Defiance AI Capabilities Suite.",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "publisher": "DigitalDefiance",
   "author": {
     "name": "Digital Defiance, Jessica Mulein"
@@ -89,6 +89,12 @@
       }
     ],
     "commands": [
+      {
+        "command": "akira.welcome",
+        "title": "Show Welcome Tab",
+        "category": "Akira",
+        "icon": "$(info)"
+      },
       {
         "command": "akira.refreshSpecs",
         "title": "Refresh Specs",

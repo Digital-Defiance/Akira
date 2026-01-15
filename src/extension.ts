@@ -8,6 +8,7 @@ import { registerChatParticipant } from "./chat-participant";
 import { ConfigManager } from "./config-manager";
 import { StatusBarManager } from "./status-bar-manager";
 import { SpecTreeProvider } from "./spec-tree-provider";
+import { WelcomePanel } from "./welcome-panel";
 import { generateRequirementsWithLLM } from "./llm-requirements-generator";
 import { generateDesignWithLLM } from "./llm-design-generator";
 import { generateTasksWithLLM } from "./llm-task-generator";
@@ -157,6 +158,12 @@ export async function activate(context: vscode.ExtensionContext) {
   outputChannel.info("Test CodeLens Provider registered");
 
   // Register Commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand("akira.welcome", () => {
+      WelcomePanel.createOrShow();
+    })
+  );
+
   context.subscriptions.push(
     vscode.commands.registerCommand("akira.refreshSpecs", () => {
       treeProvider?.refresh();
@@ -1777,6 +1784,17 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   outputChannel.info("✅ Autonomous Execution Commands registered");
+
+  // Show welcome tab on first activation
+  // Check if this is the first activation by looking for a workspace state flag
+  const hasSeenWelcome = context.globalState.get("akira.hasSeenWelcome");
+  if (!hasSeenWelcome) {
+    // Show welcome panel
+    setTimeout(() => {
+      WelcomePanel.createOrShow();
+      context.globalState.update("akira.hasSeenWelcome", true);
+    }, 500);
+  }
 
   // Register configuration change listener
   const configListener = ConfigManager.onConfigurationChanged((newConfig) => {
