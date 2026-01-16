@@ -6,7 +6,7 @@
 
 ```
 copilot-spec-extension/
-├── .kiro/
+├── .akira/
 │   └── specs/
 │       └── copilot-spec-extension/
 ├── src/

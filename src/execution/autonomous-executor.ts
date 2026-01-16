@@ -69,7 +69,7 @@ export class AutonomousExecutor {
 
   constructor(
     private workspaceRoot: string,
-    private specDirectory: string = ".kiro/specs",
+    private specDirectory: string = ".akira/specs",
     config: Partial<AutonomousConfig> = {},
     outputChannel?: vscode.OutputChannel
   ) {
@@ -78,7 +78,7 @@ export class AutonomousExecutor {
     this.eventBus = getEventBus();
     this.storage = new StorageLayer(workspaceRoot);
     
-    this.sessionManager = new SessionManager(workspaceRoot, ".kiro");
+    this.sessionManager = new SessionManager(workspaceRoot, ".akira");
     this.scheduler = new Scheduler({ maxConcurrentTasks: this.config.maxConcurrentTasks });
     this.decisionEngine = new DecisionEngine(workspaceRoot);
     this.executionEngine = new ExecutionEngine(workspaceRoot, {

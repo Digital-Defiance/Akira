@@ -155,7 +155,7 @@ Creates a new spec with initial requirements generation.
 ## Spec Directory Structure
 
 ```
-.kiro/
+.akira/
   specs/
     feature-name/
       requirements.md    # EARS-compliant requirements
@@ -168,7 +168,7 @@ Creates a new spec with initial requirements generation.
 
 Configure Akira through VS Code settings:
 
-- **Spec Directory**: Custom location for spec files (default: `.kiro/specs`)
+- **Spec Directory**: Custom location for spec files (default: `.akira/specs`)
 - **Strict Mode**: Require completion of all tasks including optional ones
 - **Property Test Iterations**: Number of iterations for property-based tests (default: 100)
 - **Auto-Approval**: Skip manual approval steps (not recommended)

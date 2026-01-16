@@ -108,7 +108,7 @@ The Autonomous Execution Engine transforms static specification documents into e
                               ▼
                     ┌──────────────────┐
                     │   File System    │
-                    │  .kiro/          │
+                    │  .akira/         │
                     │  ├── sessions/   │
                     │  └── checkpoints/│
                     └──────────────────┘
@@ -188,7 +188,7 @@ User Command (akira.autonomous.start)
 │    • CheckpointManager.createCheckpoint()           │
 │    • Capture file snapshots                         │
 │    • Create Git commit (if available)               │
-│    • Store in .kiro/checkpoints/                    │
+│    • Store in .akira/checkpoints/                   │
 └─────────────────────────────────────────────────────┘
                      │
                      ▼
@@ -324,7 +324,7 @@ Main orchestrator coordinating all components and VS Code UI.
 
 ```
 
-.kiro/
+.akira/
 ├── sessions/
 │ └── session-{timestamp}/
 │ ├── session.md # State + task table
@@ -377,13 +377,11 @@ specPath: /workspace/feature.md
 ### Three-Tier Approach
 
 1. **Unit Tests** (Vitest) - `npm test`
-
    - 10 test files for each component
    - 140+ test cases
    - Mocked dependencies
 
 2. **Integration Tests** (Vitest) - `npm test src/execution-engine.integration.test.ts`
-
    - 15 multi-component scenarios
    - Real file system operations
    - No VS Code dependency

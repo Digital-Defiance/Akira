@@ -32,23 +32,23 @@ export function toKebabCase(featureName: string): string {
 }
 
 /**
- * Get the base directory for Akira files (.akira or .kiro for backwards compatibility)
+ * Get the base directory for Akira files (.akira or .akira for backwards compatibility)
  * @param workspaceRoot - The workspace root path
  * @param preferredDir - Preferred directory name (default: ".akira")
- * @returns The base directory path (.akira if it exists or for new, .kiro if it exists for backwards compat)
+ * @returns The base directory path (.akira if it exists or for new, .akira if it exists for backwards compat)
  */
 export function getAkiraBaseDirectory(
   workspaceRoot: string
 ): string {
   const akiraDir = path.join(workspaceRoot, ".akira");
-  const kiroDir = path.join(workspaceRoot, ".kiro");
+  const kiroDir = path.join(workspaceRoot, ".akira");
   
   // If .akira exists, use it
   if (fs.existsSync(akiraDir)) {
     return akiraDir;
   }
   
-  // If .kiro exists (backwards compatibility), use it
+  // If .akira exists (backwards compatibility), use it
   if (fs.existsSync(kiroDir)) {
     return kiroDir;
   }
@@ -90,7 +90,7 @@ export function getSpecDirectoryPath(
     if (customDir) {
       baseDir = customDir;
     } else {
-      // Use .akira/specs or .kiro/specs for backwards compatibility
+      // Use .akira/specs or .akira/specs for backwards compatibility
       const akiraBase = getAkiraBaseDirectory(root);
       baseDir = path.join(path.basename(akiraBase), "specs");
     }
@@ -191,7 +191,7 @@ export function listSpecs(workspaceRoot?: string): SpecInfo[] {
     if (customDir) {
       specBaseDir = customDir;
     } else {
-      // Use .akira/specs or .kiro/specs for backwards compatibility
+      // Use .akira/specs or .akira/specs for backwards compatibility
       const akiraBase = getAkiraBaseDirectory(root);
       specBaseDir = path.join(path.basename(akiraBase), "specs");
     }

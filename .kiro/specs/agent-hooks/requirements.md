@@ -4,17 +4,17 @@
 
 This document specifies the requirements for Implement an agent hooks system.
 
-**Feature Idea:** Implement an agent hooks system for event-triggered automation. Hooks should trigger on file save, git commit, and other VS Code events, executing predefined prompts automatically in the background. Include hooks configuration file (.kiro/hooks.json), event listener registration, and hook execution engine.
+**Feature Idea:** Implement an agent hooks system for event-triggered automation. Hooks should trigger on file save, git commit, and other VS Code events, executing predefined prompts automatically in the background. Include hooks configuration file (.akira/hooks.json), event listener registration, and hook execution engine.
 
 ## Glossary
 
 - **hook**: A user-defined mapping of a trigger event to one or more prompt executions and associated metadata.
-- **hooks configuration file**: A JSON file named .kiro/hooks.json stored at workspace root that declares hooks, triggers, prompts, and metadata.
+- **hooks configuration file**: A JSON file named .akira/hooks.json stored at workspace root that declares hooks, triggers, prompts, and metadata.
 - **event listener**: A registered callback inside the extension that receives VS Code events such as file save or git commit.
 - **hook execution engine**: The runtime component that schedules, runs, logs, retries, and times out hook prompt executions in the background.
 - **prompt**: A predefined text payload that the hook execution engine sends to an agent or local runner.
 - **VS Code event**: An editor, workspace, or SCM lifecycle event emitted by VS Code (e.g., onDidSaveTextDocument, onWillSaveTextDocument, git commit).
-- **hook ID**: A unique identifier string for a hook defined in .kiro/hooks.json.
+- **hook ID**: A unique identifier string for a hook defined in .akira/hooks.json.
 - **output pane**: The extension's dedicated output channel in VS Code where execution logs and errors appear.
 
 ## Requirements
@@ -25,8 +25,8 @@ This document specifies the requirements for Implement an agent hooks system.
 
 #### Acceptance Criteria
 
-1. WHEN the workspace opens the system shall load .kiro/hooks.json from the workspace root within 2000 ms
-2. The system shall validate .kiro/hooks.json against the schema and reject the file when validation fails by emitting a schema error to the output pane
+1. WHEN the workspace opens the system shall load .akira/hooks.json from the workspace root within 2000 ms
+2. The system shall validate .akira/hooks.json against the schema and reject the file when validation fails by emitting a schema error to the output pane
 3. The system shall persist a normalized in-memory representation of each hook including hook ID, trigger, prompt, enabled flag, concurrency, timeout, and retry policy after successful validation
 
 ### Requirement REQ-2
@@ -56,7 +56,6 @@ This document specifies the requirements for Implement an agent hooks system.
 
 #### Acceptance Criteria
 
-1. WHEN a git commit event occurs the system shall execute only hooks that declare the repository root and have the allowGit flag set to true in .kiro/hooks.json
+1. WHEN a git commit event occurs the system shall execute only hooks that declare the repository root and have the allowGit flag set to true in .akira/hooks.json
 2. The system shall redact configured secret patterns from prompts and execution logs by replacing each match with the fixed token "[REDACTED]" before writing to the output pane
 3. IF a hook execution returns a non-zero exit or error THEN the system shall retry execution according to the hook's retry policy and shall stop retrying after the configured retry count is reached and log the final failure
-

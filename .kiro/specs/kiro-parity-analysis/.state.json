@@ -1,0 +1,12 @@
+{
+  "featureName": "kiro-parity-analysis",
+  "currentPhase": "requirements",
+  "approvals": {
+    "requirements": false,
+    "design": false,
+    "tasks": false
+  },
+  "taskStatuses": {},
+  "createdAt": "2026-01-16T00:00:00.000Z",
+  "updatedAt": "2026-01-16T00:00:00.000Z"
+}

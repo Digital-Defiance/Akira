@@ -12,24 +12,24 @@ This specification outlines enhancements to the Akira VS Code extension to impro
 
 ## Glossary
 
-| Term | Definition |
-|------|------------|
-| **EARS** | Easy Approach to Requirements Syntax - A structured method for writing requirements |
-| **INCOSE** | International Council on Systems Engineering - Standards body for systems engineering |
-| **MCP** | Model Context Protocol - Protocol for persistent context management |
-| **PBT** | Property-Based Testing - Testing approach using generated test cases |
-| **Spec** | Specification document containing requirements, design, and tasks |
-| **Phase** | One of four workflow stages: requirements, design, tasks, or execution |
-| **Task Hierarchy** | Two-level task structure (e.g., 1, 1.1, 1.2) |
-| **Correctness Property** | Testable property derived from acceptance criteria |
-| **Checkpoint Task** | Validation task to verify completion before proceeding |
-| **Optional Task** | Task marked with asterisk (*) that can be skipped in non-strict mode |
-| **Approval Workflow** | Process requiring explicit confirmation before phase transition |
-| **Spec Directory** | Workspace location for storing spec files (.kiro/specs) |
-| **Tree View** | VS Code sidebar view showing all specs with status indicators |
-| **Status Bar** | Bottom bar showing current spec and phase information |
-| **Auto-Approval** | Configuration option to skip manual approval steps |
-| **Strict Mode** | Configuration requiring completion of all tasks including optional ones |
+| Term                     | Definition                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| **EARS**                 | Easy Approach to Requirements Syntax - A structured method for writing requirements   |
+| **INCOSE**               | International Council on Systems Engineering - Standards body for systems engineering |
+| **MCP**                  | Model Context Protocol - Protocol for persistent context management                   |
+| **PBT**                  | Property-Based Testing - Testing approach using generated test cases                  |
+| **Spec**                 | Specification document containing requirements, design, and tasks                     |
+| **Phase**                | One of four workflow stages: requirements, design, tasks, or execution                |
+| **Task Hierarchy**       | Two-level task structure (e.g., 1, 1.1, 1.2)                                          |
+| **Correctness Property** | Testable property derived from acceptance criteria                                    |
+| **Checkpoint Task**      | Validation task to verify completion before proceeding                                |
+| **Optional Task**        | Task marked with asterisk (\*) that can be skipped in non-strict mode                 |
+| **Approval Workflow**    | Process requiring explicit confirmation before phase transition                       |
+| **Spec Directory**       | Workspace location for storing spec files (.akira/specs)                              |
+| **Tree View**            | VS Code sidebar view showing all specs with status indicators                         |
+| **Status Bar**           | Bottom bar showing current spec and phase information                                 |
+| **Auto-Approval**        | Configuration option to skip manual approval steps                                    |
+| **Strict Mode**          | Configuration requiring completion of all tasks including optional ones               |
 
 ---
 
@@ -586,39 +586,51 @@ This specification outlines enhancements to the Akira VS Code extension to impro
 ## Correctness Properties
 
 ### Property 1: Spec Deletion Safety
+
 **For any** spec deletion operation **the system must** display confirmation prompts and successfully remove all associated files OR provide clear error messages if deletion fails
 
 ### Property 2: Task Context Loading
+
 **For any** task execution **the system must** load all relevant requirements and design documents before presenting the task to the user
 
 ### Property 3: Template Variable Substitution
+
 **For any** spec created from a template **the system must** replace all template variables with valid values and produce a well-formed specification
 
 ### Property 4: Export Format Fidelity
+
 **For any** spec export operation **the system must** preserve all requirements, design elements, and task structure in the target format
 
 ### Property 5: Import EARS Conversion
+
 **For any** imported requirement **the system must** either successfully convert it to EARS format OR flag it for manual review with specific guidance
 
 ### Property 6: Quality Score Consistency
+
 **For any** requirement **the system must** produce consistent quality scores across multiple evaluations unless the requirement text changes
 
 ### Property 7: Coverage Analysis Completeness
+
 **For any** spec **the system must** identify all acceptance criteria lacking property tests and report them in the coverage analysis
 
 ### Property 8: Search Result Relevance
+
 **For any** search query **the system must** return results sorted by relevance and include proper context highlighting
 
 ### Property 9: Glossary Term Detection
+
 **For any** document containing technical terms **the system must** detect terms matching the glossary and offer linking without false positives from common words
 
 ### Property 10: Notification Delivery
+
 **For any** phase transition **the system must** attempt notification delivery and log success/failure status
 
 ### Property 11: Bidirectional Sync Consistency
+
 **For any** task status update **if** bidirectional sync is enabled **the system must** eventually synchronize the status with external systems OR report sync failures
 
 ### Property 12: Validation Idempotence
+
 **For any** spec document **the system must** produce identical validation results when run multiple times without document changes
 
 ---
@@ -628,21 +640,25 @@ This specification outlines enhancements to the Akira VS Code extension to impro
 ### Priority Levels
 
 **P0 - Critical (Complete TODO items)**
+
 - Enhanced Spec Deletion (Feature 1)
 - Advanced Task Execution (Feature 2)
 
 **P1 - High Value (Quick Wins)**
+
 - Template Management (Feature 6)
 - Quality Metrics (Feature 9.1)
 - Search and Discovery (Feature 11)
 
 **P2 - Medium Value (Enhanced Workflows)**
+
 - Comparison and Diff (Feature 3)
 - Property Test Integration (Feature 5)
 - Export and Reporting (Feature 7)
 - Glossary Management (Feature 12)
 
 **P3 - Future Enhancements**
+
 - Collaborative Review (Feature 4)
 - External System Integration (Feature 8)
 - CI/CD Integration (Feature 10)
@@ -665,7 +681,6 @@ This specification outlines enhancements to the Akira VS Code extension to impro
   - `marked` for HTML export
   - `docx` for Word export
   - Diagram libraries (`mermaid`, `d3`)
-  
 - **VS Code APIs**:
   - Webview API for viewers
   - Language Server Protocol for enhanced editing

@@ -24,7 +24,7 @@ Main orchestrator that manages the entire execution lifecycle:
 Manages session state persistence:
 
 - Creates and tracks execution sessions
-- Persists session state to markdown files (`.kiro/sessions/<id>/session.md`)
+- Persists session state to markdown files (`.akira/sessions/<id>/session.md`)
 - Maintains history, decisions, and logs
 - Tracks task completion and failures
 
@@ -89,7 +89,7 @@ Pub/sub system for execution events:
 
 ### Session Structure
 
-Each session is stored in `.kiro/sessions/<session-id>/`:
+Each session is stored in `.akira/sessions/<session-id>/`:
 
 ```
 session.md          # Main session state (YAML front-matter + task table)
@@ -263,18 +263,15 @@ Settings under `akira.autonomous`:
    ```
 
 2. **Start autonomous execution**:
-
    - Right-click spec in tree view → "Start Autonomous Execution"
    - Or: Command Palette → "Akira: Start Autonomous Execution"
 
 3. **Monitor progress**:
-
    - Status bar shows current progress
    - Click status bar for session menu
    - View session.md for detailed state
 
 4. **Task execution**:
-
    - Tasks with success criteria may auto-complete (detection)
    - Tasks without automated actions show guidance
    - Manual implementation required, then mark complete

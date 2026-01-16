@@ -645,7 +645,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           const config = vscode.workspace.getConfiguration("copilotSpec");
           const specDirectory =
-            config.get<string>("specDirectory") || ".kiro/specs";
+            config.get<string>("specDirectory") || ".akira/specs";
 
           // Update checkbox to in-progress
           await updateTaskCheckbox(uri, line, "~");
@@ -1752,7 +1752,7 @@ export async function activate(context: vscode.ExtensionContext) {
             case "log":
               const sessionPath = path.join(
                 workspaceRoot || "",
-                ".kiro",
+                ".akira",
                 "sessions",
                 session.id,
                 "session.md"

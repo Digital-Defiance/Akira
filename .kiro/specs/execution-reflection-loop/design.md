@@ -369,7 +369,7 @@ const DEFAULT_REFLECTION_CONFIG: ReflectionConfig = {
 Reflection data will be stored in the session directory:
 
 ```
-.kiro/sessions/{session-id}/
+.akira/sessions/{session-id}/
 ├── session.md              # Existing session state
 ├── history.md              # Existing execution log
 ├── decisions.md            # Existing decision log
@@ -466,7 +466,6 @@ Reflection data will be stored in the session directory:
 The system distinguishes between two types of failures:
 
 1. **Transient Failures** (handled by existing retry logic):
-
    - Network timeouts
    - File locks
    - Temporary resource unavailability

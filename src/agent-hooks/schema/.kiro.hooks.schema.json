@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Hooks Configuration",
+  "description": "Configuration schema for .akira/hooks.json",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Schema version for migration support",
+      "default": "1.0.0"
+    },
+    "hooks": {
+      "type": "array",
+      "description": "Array of hook definitions",
+      "items": {
+        "$ref": "#/definitions/hook"
+      }
+    }
+  },
+  "required": ["hooks"],
+  "definitions": {
+    "hook": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the hook",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name for the hook"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of what the hook does"
+        },
+        "trigger": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "fileEdited",
+                "fileCreated",
+                "fileDeleted",
+                "userTriggered",
+                "promptSubmit",
+                "agentStop",
+                "gitCommit"
+              ],
+              "description": "Type of event that triggers the hook"
+            },
+            "patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "File patterns for file-based triggers (glob syntax)"
+            }
+          },
+          "required": ["type"],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "enum": ["fileEdited", "fileCreated", "fileDeleted"]
+                  }
+                }
+              },
+              "then": {
+                "required": ["patterns"]
+              }
+            }
+          ]
+        },
+        "action": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["askAgent", "runCommand"],
+              "description": "Type of action to perform"
+            },
+            "prompt": {
+              "type": "string",
+              "description": "Prompt to send to agent (for askAgent)"
+            },
+            "command": {
+              "type": "string",
+              "description": "Command to execute (for runCommand)"
+            }
+          },
+          "required": ["type"],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "askAgent"
+                  }
+                }
+              },
+              "then": {
+                "required": ["prompt"]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "runCommand"
+                  }
+                }
+              },
+              "then": {
+                "required": ["command"],
+                "properties": {
+                  "trigger": {
+                    "properties": {
+                      "type": {
+                        "enum": ["promptSubmit", "agentStop"]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the hook is enabled",
+          "default": true
+        },
+        "concurrency": {
+          "type": "integer",
+          "description": "Maximum concurrent executions",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 4
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Execution timeout in milliseconds",
+          "minimum": 1000,
+          "default": 30000
+        },
+        "retry": {
+          "type": "object",
+          "properties": {
+            "maxAttempts": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 3
+            },
+            "backoffMs": {
+              "type": "integer",
+              "minimum": 100,
+              "default": 1000
+            },
+            "jitter": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "allowGit": {
+          "type": "boolean",
+          "description": "Allow execution on git events",
+          "default": false
+        },
+        "repoRoot": {
+          "type": "string",
+          "description": "Repository root path for git triggers"
+        },
+        "secretPatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Regex patterns for secret redaction"
+        }
+      },
+      "required": ["id", "name", "trigger", "action"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "trigger": {
+                "properties": {
+                  "type": {
+                    "const": "gitCommit"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": ["allowGit", "repoRoot"],
+            "properties": {
+              "allowGit": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

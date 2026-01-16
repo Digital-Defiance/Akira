@@ -129,20 +129,17 @@ code --install-extension akira-0.1.0.vsix
 #### 4. Spec Workflow
 
 1. **Requirements Phase**
-
    - Create spec with feature idea
    - Review generated EARS requirements
    - Validate against INCOSE rules
    - Approve to move to design
 
 2. **Design Phase**
-
    - Generate design document
    - Review architecture decisions
    - Approve to move to tasks
 
 3. **Tasks Phase**
-
    - Generate task breakdown
    - Execute tasks one by one
    - Track progress
@@ -156,7 +153,7 @@ code --install-extension akira-0.1.0.vsix
 
 Open Settings (Ctrl+, / Cmd+,) and search for "Akira":
 
-- **Spec Directory**: Where specs are stored (default: `.kiro/specs`)
+- **Spec Directory**: Where specs are stored (default: `.akira/specs`)
 - **Strict Mode**: Require all optional tasks (default: `false`)
 - **Property Test Iterations**: Number of PBT iterations (default: `100`)
 

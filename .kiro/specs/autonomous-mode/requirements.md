@@ -9,10 +9,10 @@ This document specifies the requirements for Implement fully autonomous executio
 ## Glossary
 
 - **Autonomous Executor**: The background agent component implemented in autonomous-executor.ts that makes decisions and executes tasks without user confirmation within VS Code.
-- **Checkpoint**: A markdown file snapshot of task state at a defined phase boundary that enables rollback and resume, stored in `.kiro/checkpoints/` directory.
+- **Checkpoint**: A markdown file snapshot of task state at a defined phase boundary that enables rollback and resume, stored in `.akira/checkpoints/` directory.
 - **Rollback**: An operation that restores task/file state to a prior checkpoint by reading the checkpoint markdown file and reverting changes.
 - **Execution Approval Policy**: A configuration in VS Code settings that constrains autonomous execution by requiring confirmations, setting limits, or escalation procedures.
-- **Session State File**: A markdown file in `.kiro/sessions/` that tracks the current autonomous execution session, its tasks, and progress.
+- **Session State File**: A markdown file in `.akira/sessions/` that tracks the current autonomous execution session, its tasks, and progress.
 - **Session**: A single autonomous execution instance with a unique identifier, lifecycle states, and metadata stored in a session markdown file.
 - **Task Detection**: The capability to validate if task success criteria are already met before executing the task.
 
@@ -36,7 +36,7 @@ This document specifies the requirements for Implement fully autonomous executio
 
 #### Acceptance Criteria
 
-1. WHEN a user starts an autonomous session via command palette, the system shall create a session state file in `.kiro/sessions/` with session ID and task list within 1 second.
+1. WHEN a user starts an autonomous session via command palette, the system shall create a session state file in `.akira/sessions/` with session ID and task list within 1 second.
 2. WHILE background tasks execute, the system shall not block the VS Code UI and shall update the status bar with current task progress.
 3. WHEN a background task completes, the system shall show a VS Code notification and update the session state file within 2 seconds.
 4. The system shall use VS Code's async task execution to run LLM calls and file operations without freezing the editor.
@@ -51,7 +51,7 @@ This document specifies the requirements for Implement fully autonomous executio
 2. WHEN evaluating whether a task is already complete, the system shall check file existence, content validation, and command success criteria with confidence scoring.
 3. IF the confidence score for "task already complete" is >= 0.80, THEN the system shall mark the task complete without re-executing and log the decision to the session file.
 4. IF the confidence score is < 0.80 or task requires execution, THEN the system shall proceed with task execution and log the decision reasoning in the session file.
-5. WHERE decision logging is enabled, the system shall append decision records to `.kiro/sessions/<session-id>/decisions.md` with timestamp, task, confidence, and reasoning.
+5. WHERE decision logging is enabled, the system shall append decision records to `.akira/sessions/<session-id>/decisions.md` with timestamp, task, confidence, and reasoning.
 
 ### Requirement REQ-4
 
@@ -60,9 +60,9 @@ This document specifies the requirements for Implement fully autonomous executio
 #### Acceptance Criteria
 
 1. WHEN a task execution fails with a transient error (e.g., API timeout, temporary file lock), the system shall retry the task up to 3 times with exponential backoff (1s, 2s, 4s).
-2. IF a task fails after all retries, THEN the system shall create a checkpoint markdown file in `.kiro/checkpoints/<session-id>/` capturing the state before the failed task and mark the task as Failed with error details.
+2. IF a task fails after all retries, THEN the system shall create a checkpoint markdown file in `.akira/checkpoints/<session-id>/` capturing the state before the failed task and mark the task as Failed with error details.
 3. WHEN the system performs a rollback, the system shall revert file changes using Git (if available) or file system snapshots captured in the checkpoint, and update the session file with rollback details within 2 seconds.
-4. The system shall maintain a rollback history in `.kiro/sessions/<session-id>/rollbacks.md` with checkpoint ID, timestamp, reason, and files affected.
+4. The system shall maintain a rollback history in `.akira/sessions/<session-id>/rollbacks.md` with checkpoint ID, timestamp, reason, and files affected.
 
 ### Requirement REQ-5
 
@@ -70,7 +70,7 @@ This document specifies the requirements for Implement fully autonomous executio
 
 #### Acceptance Criteria
 
-1. The system shall create a checkpoint markdown file in `.kiro/checkpoints/<session-id>/phase-<N>.md` after successful completion of each phase, including phase ID, completed tasks, and workspace state snapshot.
+1. The system shall create a checkpoint markdown file in `.akira/checkpoints/<session-id>/phase-<N>.md` after successful completion of each phase, including phase ID, completed tasks, and workspace state snapshot.
 2. WHILE a session transitions phases, the system shall validate all phase tasks are complete by checking the tasks.md file and shall advance to the next phase within 5 seconds when no blocking conditions exist.
 3. WHEN a session has more than 50 checkpoints, the system shall optionally compact older checkpoints by keeping only phase boundary checkpoints and the 10 most recent checkpoints.
 4. WHERE phase-level timeouts are configured in VS Code settings, the system shall pause or abort the phase if execution exceeds the timeout and create an error checkpoint with timeout details.
@@ -96,7 +96,7 @@ This document specifies the requirements for Implement fully autonomous executio
 2. WHILE a session is active, the system shall update the status bar progress at least every task completion or every 30 seconds, whichever occurs first.
 3. WHEN the system reaches configured progress milestones (25%, 50%, 75%, 100%), the system shall show a VS Code information notification within 5 seconds with summary of completed tasks.
 4. The status bar item shall be clickable and shall open a quick pick menu showing: View Session Log, Pause Session, Resume Session, and Stop Session options.
-5. WHEN a user clicks "View Session Log", the system shall open the session state file (`.kiro/sessions/<session-id>/session.md`) in the editor.
+5. WHEN a user clicks "View Session Log", the system shall open the session state file (`.akira/sessions/<session-id>/session.md`) in the editor.
 
 ### Requirement REQ-8
 
@@ -106,7 +106,7 @@ This document specifies the requirements for Implement fully autonomous executio
 
 1. WHEN a user pauses a session via command palette or status bar, the system shall save the current state to the session file, set status to "PAUSED", and stop scheduling new tasks within 2 seconds.
 2. WHEN a user resumes a paused session, the system shall restore the session state from the session file and continue with the next incomplete task within 3 seconds.
-3. The system shall maintain execution history in `.kiro/sessions/<session-id>/history.md` with timestamped entries for: task start/complete, errors, retries, checkpoints, rollbacks, and pause/resume events.
+3. The system shall maintain execution history in `.akira/sessions/<session-id>/history.md` with timestamped entries for: task start/complete, errors, retries, checkpoints, rollbacks, and pause/resume events.
 4. IF a paused session's session file is older than 7 days, THEN the system shall mark the session as "STALE" in the file and show an informational notification suggesting cleanup or archival.
 
 ### Requirement REQ-9
@@ -115,7 +115,7 @@ This document specifies the requirements for Implement fully autonomous executio
 
 #### Acceptance Criteria
 
-1. WHEN the system makes an LLM API call (OpenAI, Anthropic, etc.), the system shall log request details (model, prompt length, tokens) to `.kiro/sessions/<session-id>/api-calls.md`.
+1. WHEN the system makes an LLM API call (OpenAI, Anthropic, etc.), the system shall log request details (model, prompt length, tokens) to `.akira/sessions/<session-id>/api-calls.md`.
 2. IF an LLM API call fails with a transient error (rate limit, timeout), THEN the system shall retry the call up to 3 times with exponential backoff and log each attempt.
 3. IF an API call fails with authentication error (401/403), THEN the system shall pause the session, show a VS Code error notification requesting user to check API keys, and log the failure.
 4. WHEN the system receives webhook events (e.g., from GitHub Actions CI status), it shall correlate them to the active session by checking session context and optionally resume paused sessions waiting on external conditions.

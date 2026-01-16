@@ -3,7 +3,7 @@
 ## Phase 1: Foundation & Setup
 
 - [ ] 1.1 Initialize extension scaffolding and workspace layout
-  - Create package.json, tsconfig.json, .vscode/launch.json, src/ folder, and .kiro/ folders in workspace template.
+  - Create package.json, tsconfig.json, .vscode/launch.json, src/ folder, and .akira/ folders in workspace template.
   - Ensure extension activation events for commands: `akira.autonomous.start`, `.pause`, `.resume`, `.stop`.
   - Success criteria: project builds, VS Code run-extension starts with no runtime errors.
 - [ ] 1.2 Add shared types, DI tokens, and Event Bus skeleton
@@ -27,7 +27,7 @@
 - [ ] 2.2 Implement Session Manager (file-backed sessions)
   - File: src/session/session-manager.ts
   - Implement createSession, updateSession, readSession; session.md format with YAML front-matter.
-  - Success criteria: createSession writes .kiro/sessions/<id>/session.md and subsequent updateSession patches persisted JSON/YAML.
+  - Success criteria: createSession writes .akira/sessions/<id>/session.md and subsequent updateSession patches persisted JSON/YAML.
 - [ ] 2.3 Implement Scheduler / Worker Pool
   - File: src/scheduler/scheduler.ts
   - Implement enqueueTask(task, sessionContext), setConcurrency(n), shutdown(); use semaphore-like limiter and priority queue.
@@ -55,7 +55,7 @@
 - [ ] 2.7 Implement Checkpoint Manager create/restore
   - File: src/checkpoint/checkpoint-manager.ts
   - Implementation notes:
-    - createCheckpoint(sessionId, phaseId, metadata, snapshot) writes .kiro/checkpoints/<session-id>/phase-<N>.md with YAML front-matter and optional base64 archived files.
+    - createCheckpoint(sessionId, phaseId, metadata, snapshot) writes .akira/checkpoints/<session-id>/phase-<N>.md with YAML front-matter and optional base64 archived files.
     - restoreCheckpoint(checkpointId) returns RestoreResult with list of files to restore.
   - Success criteria: checkpoint file created and parsed back; restorePreview returns diffs without applying changes.
 
@@ -75,7 +75,7 @@
   - Success criteria: status bar updates on session events; quick pick actions call autonomous-executor APIs.
 - [ ] 3.4 Implement API Logger (append-only)
   - File: src/api/api-logger.ts
-  - Implement logApiCall(sessionId,callMeta), logApiFailure(sessionId,callMeta,error) writing to .kiro/sessions/<session-id>/api-calls.md atomically.
+  - Implement logApiCall(sessionId,callMeta), logApiFailure(sessionId,callMeta,error) writing to .akira/sessions/<session-id>/api-calls.md atomically.
   - Success criteria: api-calls.md contains structured entries for successful and failed calls with timestamps.
 
 ## Phase 4: Testing & Documentation
@@ -96,7 +96,7 @@
   - Include code examples for autonomous-executor public API, session file formats, and how to opt-out telemetry.
   - Success criteria: developer can onboard and run tests following docs; session file format example present.
 - [ ] 4.4 Release checklist, code review, and security review
-  - Tasks: create PR template with checklist (tests, docs, telemetry opt-in, secrets warning), run dependency audit, confirm .gitignore recommendations for .kiro.
+  - Tasks: create PR template with checklist (tests, docs, telemetry opt-in, secrets warning), run dependency audit, confirm .gitignore recommendations for .akira.
   - Success criteria: checklist items in PRs; security review notes addressed; no raw API keys persisted.
 
 ## Optional Enhancements (Optional)

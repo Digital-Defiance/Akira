@@ -66,7 +66,7 @@ export class SpecMCPClient extends BaseMCPClient {
     const workspaceRoot =
       vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
     const config = vscode.workspace.getConfiguration("copilotSpec");
-    const specDirectory = config.get<string>("specDirectory") || ".kiro/specs";
+    const specDirectory = config.get<string>("specDirectory") || ".akira/specs";
     const strictMode = config.get<boolean>("strictMode", false);
     const propertyTestIterations = config.get<number>("propertyTestIterations", 100);
 

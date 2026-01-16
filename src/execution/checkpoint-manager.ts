@@ -11,20 +11,20 @@ import { GitIntegrator } from "./git-integrator";
 import { CheckpointMetadata, CheckpointFile, RollbackResult } from "./types";
 
 /**
- * Get the base directory for execution files (.akira or .kiro for backwards compatibility)
+ * Get the base directory for execution files (.akira or .akira for backwards compatibility)
  */
 function getExecutionBaseDirectory(workspaceRoot: string): string {
   const akiraDir = path.join(workspaceRoot, ".akira");
-  const kiroDir = path.join(workspaceRoot, ".kiro");
+  const kiroDir = path.join(workspaceRoot, ".akira");
   
   // If .akira exists, use it
   if (fs.existsSync(akiraDir)) {
     return ".akira";
   }
   
-  // If .kiro exists (backwards compatibility), use it
+  // If .akira exists (backwards compatibility), use it
   if (fs.existsSync(kiroDir)) {
-    return ".kiro";
+    return ".akira";
   }
   
   // Neither exists, use preferred (.akira)
