@@ -184,6 +184,23 @@
         "command": "akira.showSessionMenu",
         "title": "Show Autonomous Session Menu",
         "category": "Akira"
+      },
+      {
+        "command": "akira.multimodal.analyzeImage",
+        "title": "Analyze Image",
+        "category": "Akira",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "akira.multimodal.openResultsPanel",
+        "title": "Open Image Analysis Results",
+        "category": "Akira",
+        "icon": "$(output)"
+      },
+      {
+        "command": "akira.multimodal.clearResults",
+        "title": "Clear Image Analysis Results",
+        "category": "Akira"
       }
     ],
     "menus": {
@@ -255,6 +272,13 @@
           "when": "view == specTreeView && viewItem == phaseDocument",
           "group": "actions@4"
         }
+      ],
+      "explorer/context": [
+        {
+          "command": "akira.multimodal.analyzeImage",
+          "when": "resourceExtname =~ /\\.(png|jpg|jpeg|webp|gif)$/i",
+          "group": "akira@1"
+        }
       ]
     },
     "configuration": {
@@ -298,6 +322,87 @@
           "type": "boolean",
           "default": false,
           "description": "Automatically approve workflow phases (not recommended)",
+          "scope": "workspace"
+        },
+        "akira.multimodal.inferenceMode": {
+          "type": "string",
+          "enum": ["local", "cloud"],
+          "default": "local",
+          "description": "Inference mode for image analysis (local or cloud)",
+          "scope": "workspace"
+        },
+        "akira.multimodal.cloudEndpointUrl": {
+          "type": "string",
+          "default": "",
+          "description": "URL for cloud inference endpoint",
+          "scope": "workspace"
+        },
+        "akira.multimodal.localEnginePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to local analysis engine binary",
+          "scope": "workspace"
+        },
+        "akira.multimodal.modelId": {
+          "type": "string",
+          "default": "default",
+          "description": "Model identifier for image analysis",
+          "scope": "workspace"
+        },
+        "akira.multimodal.maxImageSizeMB": {
+          "type": "number",
+          "default": 25,
+          "minimum": 0.5,
+          "maximum": 100,
+          "description": "Maximum image file size in megabytes (0.5-100)",
+          "scope": "workspace"
+        },
+        "akira.multimodal.confidenceThreshold": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Confidence threshold percentage for detection labels (0-100)",
+          "scope": "workspace"
+        },
+        "akira.multimodal.localOnlyMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable local-only mode (disables cloud inference)",
+          "scope": "workspace"
+        },
+        "akira.multimodal.encryptAnalysisStorage": {
+          "type": "boolean",
+          "default": false,
+          "description": "Encrypt analysis results at rest using AES-256",
+          "scope": "workspace"
+        },
+        "akira.multimodal.telemetryEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable telemetry for image analysis",
+          "scope": "workspace"
+        },
+        "akira.multimodal.telemetryEndpoint": {
+          "type": "string",
+          "default": "",
+          "description": "Endpoint URL for telemetry data",
+          "scope": "workspace"
+        },
+        "akira.multimodal.maxConcurrentAnalyses": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Maximum concurrent analysis requests per workspace",
+          "scope": "workspace"
+        },
+        "akira.multimodal.queueLimit": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Maximum queued analysis requests beyond concurrency limit",
           "scope": "workspace"
         }
       }

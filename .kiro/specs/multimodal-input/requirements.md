@@ -2,9 +2,9 @@
 
 ## Introduction
 
-This document specifies the requirements for Add multimodal input support for.
+This document specifies the requirements for multimodal input support enabling image analysis and understanding within VS Code.
 
-**Feature Idea:** Add multimodal input support for image analysis and understanding. Integrate VS Code
+**Feature Idea:** Add multimodal input support for image analysis and understanding. Integrate with VS Code's extension API to allow developers to submit images for automated analysis, view results as inline annotations, configure inference backends (local or cloud), and persist analysis history within the workspace.
 
 ## Glossary
 
@@ -120,4 +120,3 @@ This document specifies the requirements for Add multimodal input support for.
 1. WHERE the extension registry feature is included the system shall load enabled plugins from a workspace-local plugins directory and call each plugin's processImage(imagePath, results) API synchronously in the order listed.
 2. WHEN the user selects a model preset the system shall apply the preset's model id, confidence threshold, and post-processing plugin list to the analysis request and persist the preset selection per workspace.
 3. IF any plugin throws an exception THEN the system shall catch the exception, log the plugin id and stack trace to the extension output pane, and continue applying remaining plugins.
-

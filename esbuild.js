@@ -117,6 +117,7 @@ async function main() {
       "src/test/suite/codelens-providers.e2e.test.ts",
       "src/test/suite/tree-view.e2e.test.ts",
       "src/test/suite/error-handling.e2e.test.ts",
+      "src/test/suite/multimodal.e2e.test.ts",
     ],
     bundle: true,
     format: "cjs",

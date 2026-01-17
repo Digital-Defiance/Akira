@@ -731,8 +731,8 @@ describe("VS Code Extension Integration Tests", () => {
         fs.readFileSync(path.join(process.cwd(), "package.json"), "utf-8")
       );
 
-      expect(packageJson.name).toBe("akira");
-      expect(packageJson.displayName).toBe("Akira");
+      expect(packageJson.name).toBe("acs-akira");
+      expect(packageJson.displayName).toBe("ACS Akira");
       expect(packageJson.description).toBeDefined();
       expect(packageJson.version).toBeDefined();
       expect(packageJson.publisher).toBeDefined();

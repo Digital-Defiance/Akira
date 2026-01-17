@@ -31,6 +31,7 @@ import {
   debugTest,
 } from "./test-codelens-provider";
 import { getAutonomousExecutor, AutonomousExecutor } from "./execution";
+import { activateMultimodalExtension, MultimodalExtensionIntegration } from "./multimodal";
 
 let mcpClient: SpecMCPClient | null = null;
 let mcpServer: SpecMCPServer | null = null;
@@ -40,6 +41,7 @@ let taskCodeLensProvider: TaskCodeLensProvider | null = null;
 let testCodeLensProvider: TestCodeLensProvider | null = null;
 let outputChannel: vscode.LogOutputChannel | null = null;
 let autonomousExecutor: AutonomousExecutor | null = null;
+let multimodalIntegration: MultimodalExtensionIntegration | null = null;
 
 // Track specs currently being generated to prevent premature approvals
 const specsBeingGenerated = new Set<string>();
@@ -1785,6 +1787,17 @@ export async function activate(context: vscode.ExtensionContext) {
 
   outputChannel.info("✅ Autonomous Execution Commands registered");
 
+  // Initialize Multimodal Extension Integration
+  try {
+    multimodalIntegration = activateMultimodalExtension(context, {
+      outputChannel: outputChannel,
+    });
+    outputChannel.info("✅ Multimodal Extension Integration activated");
+  } catch (error) {
+    outputChannel.error("Failed to activate Multimodal Extension:", error);
+    // Non-fatal error - continue with extension activation
+  }
+
   // Show welcome tab on first activation
   // Check if this is the first activation by looking for a workspace state flag
   const hasSeenWelcome = context.globalState.get("akira.hasSeenWelcome");
@@ -1859,6 +1872,12 @@ export async function deactivate() {
   if (autonomousExecutor) {
     autonomousExecutor.dispose();
     autonomousExecutor = null;
+  }
+
+  // Cleanup Multimodal Integration
+  if (multimodalIntegration) {
+    multimodalIntegration.dispose();
+    multimodalIntegration = null;
   }
 }
 

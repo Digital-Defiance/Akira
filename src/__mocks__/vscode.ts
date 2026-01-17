@@ -50,6 +50,38 @@ export const window = {
     hide: () => {},
     dispose: () => {},
   }),
+  createTextEditorDecorationType: () => ({
+    key: "mock-decoration-type",
+    dispose: () => {},
+  }),
+  createWebviewPanel: (viewType: string, title: string, showOptions: any, options?: any) => {
+    const webview = {
+      html: "",
+      options: options || {},
+      onDidReceiveMessage: (_callback: (message: any) => void) => ({
+        dispose: () => {},
+      }),
+      postMessage: () => Promise.resolve(true),
+      asWebviewUri: (uri: any) => uri,
+    };
+    return {
+      viewType,
+      title,
+      webview,
+      options: options || {},
+      viewColumn: showOptions?.viewColumn || 1,
+      active: true,
+      visible: true,
+      onDidDispose: (_callback: () => void) => ({
+        dispose: () => {},
+      }),
+      onDidChangeViewState: (_callback: (e: any) => void) => ({
+        dispose: () => {},
+      }),
+      reveal: () => {},
+      dispose: () => {},
+    };
+  },
   showInformationMessage: () => Promise.resolve(undefined),
   showWarningMessage: () => Promise.resolve(undefined),
   showErrorMessage: () => Promise.resolve(undefined),
@@ -129,8 +161,37 @@ export class ThemeColor {
   constructor(public id: string) {}
 }
 
+export class Range {
+  constructor(
+    public startLine: number,
+    public startCharacter: number,
+    public endLine: number,
+    public endCharacter: number
+  ) {}
+}
+
+export class Position {
+  constructor(public line: number, public character: number) {}
+}
+
 export const chat = {
   createChatParticipant: () => ({
     dispose: () => {},
   }),
+};
+
+export const ViewColumn = {
+  One: 1,
+  Two: 2,
+  Three: 3,
+  Active: -1,
+  Beside: -2,
+};
+
+export const env = {
+  clipboard: {
+    readText: () => Promise.resolve(""),
+    writeText: () => Promise.resolve(),
+  },
+  openExternal: () => Promise.resolve(true),
 };
