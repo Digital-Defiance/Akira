@@ -2,7 +2,7 @@
   "name": "acs-akira",
   "displayName": "ACS Akira",
   "description": "Spec-driven development for GitHub Copilot Chat with EARS requirements and property-based testing. Part of the Digital Defiance AI Capabilities Suite.",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "publisher": "DigitalDefiance",
   "author": {
     "name": "Digital Defiance, Jessica Mulein"
@@ -326,7 +326,10 @@
         },
         "akira.multimodal.inferenceMode": {
           "type": "string",
-          "enum": ["local", "cloud"],
+          "enum": [
+            "local",
+            "cloud"
+          ],
           "default": "local",
           "description": "Inference mode for image analysis (local or cloud)",
           "scope": "workspace"
