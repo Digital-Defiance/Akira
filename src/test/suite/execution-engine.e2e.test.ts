@@ -20,7 +20,7 @@ suite("Execution Engine E2E Test Suite", () => {
     );
 
     // Ensure extension is activated
-    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }
@@ -112,7 +112,7 @@ suite("Execution Engine E2E Test Suite", () => {
   suite("EventBus Integration", () => {
     test("Should initialize EventBus singleton", async () => {
       const extension = vscode.extensions.getExtension(
-        "DigitalDefiance.akira"
+        "DigitalDefiance.acs-akira"
       );
       assert.ok(extension, "Extension not found");
 

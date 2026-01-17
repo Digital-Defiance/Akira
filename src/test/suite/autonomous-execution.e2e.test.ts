@@ -21,7 +21,7 @@ suite("Autonomous Execution E2E Tests", () => {
     fs.mkdirSync(specDir, { recursive: true });
     fs.mkdirSync(sessionsDir, { recursive: true });
 
-    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }

@@ -32,7 +32,7 @@ suite("Extension E2E Test Suite", () => {
     });
 
     // Ensure extension is activated
-    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }
@@ -41,14 +41,14 @@ suite("Extension E2E Test Suite", () => {
   suite("Extension Activation", () => {
     test("Extension should be present", () => {
       const extension = vscode.extensions.getExtension(
-        "DigitalDefiance.akira"
+        "DigitalDefiance.acs-akira"
       );
       assert.ok(extension, "Extension not found");
     });
 
     test("Extension should activate", async () => {
       const extension = vscode.extensions.getExtension(
-        "DigitalDefiance.akira"
+        "DigitalDefiance.acs-akira"
       );
       assert.ok(extension, "Extension not found");
 

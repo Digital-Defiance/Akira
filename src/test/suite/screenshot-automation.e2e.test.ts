@@ -45,7 +45,7 @@ suite("Screenshot Automation Suite", function() {
     workspaceRoot = workspaceFolders[0].uri.fsPath;
 
     // Ensure extension is activated
-    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }

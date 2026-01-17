@@ -38,6 +38,7 @@ Users can open the welcome tab at any time using:
 ### Architecture
 
 The welcome panel uses VS Code's Webview API to render a rich HTML interface with:
+
 - CSS custom properties for theme integration (light/dark mode)
 - VS Code API messaging for command execution
 - Responsive design that works on various screen sizes
@@ -46,6 +47,7 @@ The welcome panel uses VS Code's Webview API to render a rich HTML interface wit
 ### Global State Management
 
 The extension tracks whether the user has seen the welcome tab using `context.globalState`:
+
 - Key: `akira.hasSeenWelcome`
 - The welcome tab only shows automatically on the very first activation
 - Users can still access it manually via the command palette at any time
@@ -65,6 +67,7 @@ To modify the welcome tab content, edit the `_getHtmlForWebview()` method in `sr
 ## Future Enhancements
 
 Possible improvements to the welcome tab:
+
 - Show tips and tricks on a schedule
 - Add interactive tutorials
 - Display recent specs in the welcome panel

@@ -25,7 +25,7 @@ suite("Chat Participant E2E Tests", () => {
     specDir = path.join(testWorkspace, ".akira", "specs");
     fs.mkdirSync(specDir, { recursive: true });
 
-    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }
@@ -54,7 +54,7 @@ suite("Chat Participant E2E Tests", () => {
   test("Chat participant is registered", async () => {
     // Note: We can't directly test chat participant without Copilot Chat installed
     // But we can verify the extension registered it
-    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
     assert.ok(extension, "Extension should be loaded");
     assert.ok(extension.isActive, "Extension should be active");
   });

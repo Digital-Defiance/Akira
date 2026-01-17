@@ -38,10 +38,23 @@ export class SpecMCPClient extends BaseMCPClient {
    * Get the command to spawn the MCP server
    */
   protected getServerCommand(): { command: string; args: string[] } {
-    // Get the extension path
-    const extensionPath = vscode.extensions.getExtension(
-      "DigitalDefiance.akira"
-    )?.extensionPath;
+    // Get the extension path with backwards-compatible IDs
+    const extensionIdCandidates = [
+      "DigitalDefiance.acs-akira",
+      "digitaldefiance.acs-akira",
+      "DigitalDefiance.akira",
+      "digitaldefiance.akira",
+    ];
+
+    const extension =
+      extensionIdCandidates
+        .map((id) => vscode.extensions.getExtension(id))
+        .find((ext): ext is vscode.Extension<any> => Boolean(ext)) ??
+      vscode.extensions.all.find((ext) =>
+        ext.id.toLowerCase().includes("acs-akira")
+      );
+
+    const extensionPath = extension?.extensionPath;
     if (!extensionPath) {
       throw new Error("Extension path not found");
     }

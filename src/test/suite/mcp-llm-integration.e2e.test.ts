@@ -18,7 +18,7 @@ suite("MCP and LLM Integration E2E Tests", () => {
     specDir = path.join(testWorkspace, ".akira", "specs");
     fs.mkdirSync(specDir, { recursive: true });
 
-    const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+    const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
     if (extension && !extension.isActive) {
       await extension.activate();
     }
@@ -462,7 +462,7 @@ _For any_ input X, output Y should satisfy Z.
       // We can't directly test the status bar item, but we can verify
       // the manager is initialized
 
-      const extension = vscode.extensions.getExtension("DigitalDefiance.akira");
+      const extension = vscode.extensions.getExtension("DigitalDefiance.acs-akira");
       assert.ok(extension, "Extension loaded");
       assert.ok(extension.isActive, "Extension active");
     });
