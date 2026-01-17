@@ -101,7 +101,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Initialize MCP Client
   try {
-    mcpClient = new SpecMCPClient(outputChannel);
+    mcpClient = new SpecMCPClient(outputChannel, context.extensionPath);
     await mcpClient.start();
     outputChannel.info("MCP Client started successfully");
   } catch (error) {
@@ -647,7 +647,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           const config = vscode.workspace.getConfiguration("copilotSpec");
           const specDirectory =
-            config.get<string>("specDirectory") || ".akira/specs";
+            config.get<string>("specDirectory") || ".kiro/specs";
 
           // Update checkbox to in-progress
           await updateTaskCheckbox(uri, line, "~");
@@ -1531,6 +1531,25 @@ export async function activate(context: vscode.ExtensionContext) {
     );
   }
 
+  // Register Multimodal Extension Integration
+  outputChannel.info("[Multimodal] Activating multimodal extension...");
+  try {
+    multimodalIntegration = activateMultimodalExtension(context, {
+      outputChannel: outputChannel,
+    });
+    outputChannel.info("[Multimodal] Multimodal commands registered");
+    outputChannel.info("[Multimodal] Network monitoring started");
+    outputChannel.info("✅ Multimodal Extension Integration activated");
+  } catch (error) {
+    outputChannel.error("[Multimodal] Failed to activate multimodal extension:", error);
+    vscode.window.showErrorMessage(
+      `Failed to activate multimodal features: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+
+  // Register 
   // Register Autonomous Execution Commands
   outputChannel.info("Registering Autonomous Execution Commands...");
   
@@ -1754,7 +1773,7 @@ export async function activate(context: vscode.ExtensionContext) {
             case "log":
               const sessionPath = path.join(
                 workspaceRoot || "",
-                ".akira",
+                ".kiro",
                 "sessions",
                 session.id,
                 "session.md"
@@ -1786,17 +1805,6 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   outputChannel.info("✅ Autonomous Execution Commands registered");
-
-  // Initialize Multimodal Extension Integration
-  try {
-    multimodalIntegration = activateMultimodalExtension(context, {
-      outputChannel: outputChannel,
-    });
-    outputChannel.info("✅ Multimodal Extension Integration activated");
-  } catch (error) {
-    outputChannel.error("Failed to activate Multimodal Extension:", error);
-    // Non-fatal error - continue with extension activation
-  }
 
   // Show welcome tab on first activation
   // Check if this is the first activation by looking for a workspace state flag

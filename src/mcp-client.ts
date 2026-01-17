@@ -15,7 +15,9 @@ import * as path from "path";
  * SpecMCPClient extends BaseMCPClient to provide spec-specific operations
  */
 export class SpecMCPClient extends BaseMCPClient {
-  constructor(outputChannel: LogOutputChannel) {
+  private extensionPath?: string;
+
+  constructor(outputChannel: LogOutputChannel, extensionPath?: string) {
     super("akira-spec-client", outputChannel, {
       timeout: {
         initializationTimeoutMs: 60000,
@@ -32,29 +34,36 @@ export class SpecMCPClient extends BaseMCPClient {
         logCommunication: true,
       },
     });
+    this.extensionPath = extensionPath;
   }
 
   /**
    * Get the command to spawn the MCP server
    */
   protected getServerCommand(): { command: string; args: string[] } {
-    // Get the extension path with backwards-compatible IDs
-    const extensionIdCandidates = [
-      "DigitalDefiance.acs-akira",
-      "digitaldefiance.acs-akira",
-      "DigitalDefiance.akira",
-      "digitaldefiance.akira",
-    ];
+    let extensionPath = this.extensionPath;
 
-    const extension =
-      extensionIdCandidates
-        .map((id) => vscode.extensions.getExtension(id))
-        .find((ext): ext is vscode.Extension<any> => Boolean(ext)) ??
-      vscode.extensions.all.find((ext) =>
-        ext.id.toLowerCase().includes("acs-akira")
-      );
+    // If extension path was not provided in constructor, try to discover it
+    if (!extensionPath) {
+      // Get the extension path with backwards-compatible IDs
+      const extensionIdCandidates = [
+        "DigitalDefiance.acs-akira",
+        "digitaldefiance.acs-akira",
+        "DigitalDefiance.akira",
+        "digitaldefiance.akira",
+      ];
 
-    const extensionPath = extension?.extensionPath;
+      const extension =
+        extensionIdCandidates
+          .map((id) => vscode.extensions.getExtension(id))
+          .find((ext): ext is vscode.Extension<any> => Boolean(ext)) ??
+        vscode.extensions.all.find((ext) =>
+          ext.id.toLowerCase().includes("acs-akira")
+        );
+
+      extensionPath = extension?.extensionPath;
+    }
+
     if (!extensionPath) {
       throw new Error("Extension path not found");
     }
