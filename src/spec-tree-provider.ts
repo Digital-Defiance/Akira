@@ -359,21 +359,24 @@ export class SpecTreeProvider
       const lines = content.split("\n");
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        // Match checkboxes: - [ ] or - [x] or - [~]
-        const match = line.match(/^-\s+\[([ x~])\]\s+(.+)$/);
+        // Match checkboxes flexibly: - [ ], - [x], - [X], - [~], - [-]
+        const match = line.match(/^-\s*\[([\sxX~-])\]\s*(.+)$/i);
         if (match) {
           const checkbox = match[1];
-          const text = match[2];
+          const text = match[2].trim();
 
-          // Extract task ID if present (e.g., "1.2: Task text")
-          const taskMatch = text.match(/^([\d.]+):\s*(.+)$/);
+          // Extract task ID flexibly
+          // Handles: "1 Task", "1. Task", "1: Task", "1.1 Task", "1.1: Task", "1.) Task", etc.
+          // Captures numeric ID and allows any combination of separators (dots, colons, parens, spaces)
+          const taskMatch = text.match(/^(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/);
           const taskId = taskMatch ? taskMatch[1] : tasks.length.toString();
           const taskText = taskMatch ? taskMatch[2] : text;
 
           let status: "pending" | "in-progress" | "completed";
-          if (checkbox === "x") {
+          const checkboxLower = checkbox.toLowerCase();
+          if (checkboxLower === "x") {
             status = "completed";
-          } else if (checkbox === "~") {
+          } else if (checkbox === "~" || checkbox === "-") {
             status = "in-progress";
           } else {
             status = "pending";

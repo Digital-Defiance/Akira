@@ -466,8 +466,9 @@ export async function activate(context: vscode.ExtensionContext) {
             let taskLine = -1;
 
             for (let i = 0; i < lines.length; i++) {
+              // Flexible regex: handles various checkbox states and separators
               const match = lines[i].match(
-                /^-\s+\[([ x~])\]\s+([\d.]+)\.?\s+(.+)$/
+                /^-\s*\[([\sxX~-])\]\s*(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/i
               );
               if (match && match[2] === taskId) {
                 taskLine = i;
@@ -574,8 +575,9 @@ export async function activate(context: vscode.ExtensionContext) {
             let taskLine = -1;
 
             for (let i = 0; i < lines.length; i++) {
+              // Flexible regex: handles various checkbox states and separators
               const match = lines[i].match(
-                /^-\s+\[([ x~])\]\s+([\d.]+)\.?\s+(.+)$/
+                /^-\s*\[([\sxX~-])\]\s*(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/i
               );
               if (match && match[2] === taskId) {
                 taskLine = i;
@@ -713,28 +715,57 @@ export async function activate(context: vscode.ExtensionContext) {
 
           outputChannel?.appendLine(`IMPLEMENTATION PROMPT:\n${prompt}\n`);
           outputChannel?.appendLine(`${"=".repeat(80)}`);
-          outputChannel?.appendLine(`NEXT STEPS:`);
-          outputChannel?.appendLine(
-            `1. Review the task requirements and context above`
-          );
-          outputChannel?.appendLine(
-            `2. Use @workspace or regular Copilot to implement the required files/code`
-          );
-          outputChannel?.appendLine(`3. Test your implementation`);
-          outputChannel?.appendLine(`4. Click "✓ Complete Task" when done\n`);
-
-          // Show notification
+          
+          // Ask user how they want to proceed
           const action = await vscode.window.showInformationMessage(
-            `🤖 Task ${taskId} started - see Output panel for details`,
-            "View Output",
-            "Ask Copilot"
+            `🤖 Task ${taskId} ready to start`,
+            "Execute Autonomously",
+            "Manual Implementation",
+            "View Context"
           );
 
-          if (action === "View Output") {
-            outputChannel?.show(true);
-          } else if (action === "Ask Copilot") {
+          if (action === "Execute Autonomously") {
+            // Initialize executor if needed
+            if (!autonomousExecutor) {
+              autonomousExecutor = getAutonomousExecutor(
+                workspaceRoot,
+                undefined,
+                undefined,
+                outputChannel ?? undefined
+              );
+            }
+
+            // Start autonomous execution
+            outputChannel?.appendLine(`🤖 Starting autonomous execution...\n`);
+            try {
+              const sessionId = await autonomousExecutor.startSession(featureName);
+              outputChannel?.appendLine(`✓ Autonomous session started: ${sessionId}\n`);
+              vscode.window.showInformationMessage(
+                `🤖 Autonomous execution started for ${featureName}`
+              );
+            } catch (error) {
+              outputChannel?.error("Failed to start autonomous execution:", error);
+              vscode.window.showErrorMessage(
+                `Failed to start autonomous execution: ${
+                  error instanceof Error ? error.message : String(error)
+                }`
+              );
+            }
+          } else if (action === "Manual Implementation") {
+            outputChannel?.appendLine(`NEXT STEPS:`);
+            outputChannel?.appendLine(
+              `1. Review the task requirements and context above`
+            );
+            outputChannel?.appendLine(
+              `2. Use @workspace or regular Copilot to implement the required files/code`
+            );
+            outputChannel?.appendLine(`3. Test your implementation`);
+            outputChannel?.appendLine(`4. Click "✓ Complete Task" when done\n`);
+            
             // Open chat focused on implementing this task
             await vscode.commands.executeCommand("workbench.action.chat.open");
+          } else if (action === "View Context") {
+            outputChannel?.show(true);
           }
         } catch (error) {
           outputChannel?.error("Failed to start task:", error);

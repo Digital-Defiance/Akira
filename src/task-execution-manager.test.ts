@@ -518,6 +518,29 @@ describe("TaskExecutionManager", () => {
       expect(tasks[2].optional).toBe(true);
     });
 
+    it("should parse tasks with decimal IDs without trailing dots", () => {
+      const tasksMarkdown = `# Implementation Plan
+
+- [ ] 1.1 Initialize
+- [ ] 1.2 Wire up events
+  - [ ] 1.2.1 Nested follow-up
+
+- [x]* 2 Optional but done
+`;
+
+      const tasks = manager.parseTasksFromMarkdown(tasksMarkdown);
+
+      expect(tasks).toHaveLength(3);
+      expect(tasks[0].id).toBe("1.1");
+      expect(tasks[0].completed).toBe(false);
+      expect(tasks[1].id).toBe("1.2");
+      expect(tasks[1].subtasks).toHaveLength(1);
+      expect(tasks[1].subtasks[0].id).toBe("1.2.1");
+      expect(tasks[2].id).toBe("2");
+      expect(tasks[2].optional).toBe(true);
+      expect(tasks[2].completed).toBe(true);
+    });
+
     it("should check if task is optional", () => {
       const featureName = "optional-check-test";
       const result = createSpecDirectory(featureName, tempDir);

@@ -57,7 +57,12 @@ export function parseTasks(
 ): ParsedTask[] {
   const lines = content.split("\n");
   const tasks: ParsedTask[] = [];
-  const taskRegex = /^(\s*)- \[([ x-])\](\*)?\s+(\d+(?:\.\d+)?)\.\s+(.*)/;
+  // Flexible task regex that handles various formats:
+  // - Checkbox states: space, x, X, ~, - (pending, completed, in-progress)
+  // - Task IDs: 1, 1.1, 1.2.3, etc.
+  // - Separators: "1. Desc", "1: Desc", "1 Desc", "1.) Desc", "1:) Desc"
+  // - Optional asterisk for optional tasks
+  const taskRegex = /^(\s*)-\s*\[([\sxX~-])\](\*)?\s+(\d+(?:\.\d+)*)[:.\)\s]*(.+)/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -68,10 +73,12 @@ export function parseTasks(
       const optional = asterisk === "*";
 
       // Determine status from checkbox or state
+      // Handle various checkbox markers: x/X = completed, -/~ = in-progress, space = pending
       let status: TaskStatus = "not-started";
-      if (checkbox === "x") {
+      const checkboxLower = checkbox.toLowerCase();
+      if (checkboxLower === "x") {
         status = "completed";
-      } else if (checkbox === "-") {
+      } else if (checkbox === "-" || checkbox === "~") {
         status = "in-progress";
       } else if (taskStatuses[taskId]) {
         status = taskStatuses[taskId];

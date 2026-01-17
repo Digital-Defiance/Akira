@@ -155,7 +155,8 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
       }
 
       // Try to match any task checkbox line first
-      const match = line.match(/^-\s+\[([ x~])\]\s+(.+)$/);
+      // Flexible: handles various checkbox states and spacing
+      const match = line.match(/^-\s*\[([\sxX~-])\]\s*(.+)$/i);
       if (match) {
         console.log(
           `[TaskCodeLensProvider] Line ${i}: Matched checkbox: "${line.substring(
@@ -164,10 +165,11 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
           )}"`
         );
         const checkbox = match[1];
-        const taskText = match[2];
+        const taskText = match[2].trim();
 
-        // Extract task ID - handles "1. Description", "1.1 Description", or "1.1. Description"
-        const taskMatch = taskText.match(/^([\d.]+)\.?\s+(.+)$/);
+        // Extract task ID - flexible format handling:
+        // "1. Description", "1: Description", "1 Description", "1.1. Description", "1.) Description"
+        const taskMatch = taskText.match(/^(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/);
         if (!taskMatch) {
           console.log(`[TaskCodeLensProvider]   -> No task ID found, skipping`);
           continue; // Skip lines that don't have task IDs
@@ -182,9 +184,10 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
         const description = taskMatch[2];
 
         let status: "pending" | "in-progress" | "completed";
-        if (checkbox === "x") {
+        const checkboxLower = checkbox.toLowerCase();
+        if (checkboxLower === "x") {
           status = "completed";
-        } else if (checkbox === "~") {
+        } else if (checkbox === "~" || checkbox === "-") {
           status = "in-progress";
         } else {
           status = "pending";
@@ -200,19 +203,19 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
             const subtaskLine = lines[j];
             // Stop if we hit another parent task or phase header
             if (
-              subtaskLine.match(/^-\s+\[[ x~]\]\s+\d+\.?\s+/) ||
+              subtaskLine.match(/^-\s*\[[\sxX~-]\]\s*\d+[:.\)\s]+/i) ||
               subtaskLine.match(/^##/)
             ) {
               const isAnotherParent = subtaskLine.match(
-                /^-\s+\[[ x~]\]\s+(\d+)\.?\s+/
+                /^-\s*\[[\sxX~-]\]\s*(\d+)[:.\)\s]+/i
               );
               if (isAnotherParent && /^\d+$/.test(isAnotherParent[1])) {
                 break; // Found another parent task
               }
             }
-            // Match potential subtasks
+            // Match potential subtasks - flexible format
             const subtaskMatch = subtaskLine.match(
-              /^-\s+\[([ x~])\]\s+([\d.]+)\.?\s+(.+)$/
+              /^-\s*\[([\sxX~-])\]\s*(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/i
             );
             if (subtaskMatch && subtaskMatch[2].startsWith(taskId + ".")) {
               subtasks.push(subtaskMatch[2]);
@@ -312,23 +315,13 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
       }
 
       // Match task lines to associate with current phase
-      // Collect ALL tasks (both parent and subtasks) to execute
-      const taskMatch = line.match(/^-\s+\[([ x~])\]\s+([\d.]+)\.?\s+(.+)$/);
+      // Only collect top-level tasks under this phase (skip nested indented items)
+      const taskMatch = line.match(/^-\s+\[([ x~])\]\s+(\d+(?:\.\d+)*)\s*[:.]?\s+(.+)$/);
       if (taskMatch && currentPhase) {
         const taskId = taskMatch[2];
-
-        // Add to phase's task list
-        // If it's a parent task (like "1."), collect its subtasks later
-        // If it's a subtask (like "1.1"), add it directly
-        if (!taskId.match(/^\d+$/)) {
-          // This is a subtask (has a dot like "1.1"), add it
-          currentPhase.tasks.push(taskId);
-        } else {
-          // This is a parent task (just a number like "1")
-          // We'll still add it to allow "Start Phase" to work
-          // but it will be expanded to subtasks when executed
-          currentPhase.tasks.push(taskId);
-        }
+        // Add all tasks found at this level to the phase
+        // Both parent tasks (like "1") and multi-level tasks (like "1.1")
+        currentPhase.tasks.push(taskId);
       }
     }
 

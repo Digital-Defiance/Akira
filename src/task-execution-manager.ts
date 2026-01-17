@@ -185,6 +185,9 @@ export class TaskExecutionManager {
   /**
    * Parse tasks from markdown content
    * Extracts task structure from tasks.md
+   * Supports both formats:
+   * 1. Hierarchical: "- [ ] 1. Task" with indented "- [ ] 1.1 Subtask"
+   * 2. Flat multi-level: "- [ ] 1.1 Task" without indentation
    */
   parseTasksFromMarkdown(tasksMarkdown: string): Task[] {
     const tasks: Task[] = [];
@@ -194,41 +197,54 @@ export class TaskExecutionManager {
     let currentSubtask: Task | null = null;
 
     for (const line of lines) {
-      // Match task line: - [ ] or - [x] followed by task ID and description
-      const taskMatch = line.match(/^- \[([ x])\](\*)?\s+(\d+)\.\s+(.+)$/);
-      if (taskMatch) {
-        const [, completed, optional, id, description] = taskMatch;
-        const task: Task = {
-          id,
-          description: description.trim(),
-          optional: optional === "*",
-          completed: completed === "x",
-          subtasks: [],
-          requirementRefs: [],
-        };
-        tasks.push(task);
-        currentTask = task;
-        currentSubtask = null;
-        continue;
+      // Check if this line is indented
+      const isIndented = /^\s+/.test(line);
+
+      // Try to match indented subtask line (for hierarchical format)
+      // Requires 2+ decimal levels like 1.2.3 or one+ levels like 1.1 when indented
+      // Flexible: handles various checkbox states and separators
+      if (isIndented) {
+        const subtaskMatch = line.match(
+          /^\s+-\s*\[([\sxX~-])\](\*)?\s*(\d+(?:\.\d+)+)[:.\)\s]*(.+)$/i
+        );
+        if (subtaskMatch && currentTask) {
+          const [, completed, optional, id, description] = subtaskMatch;
+          const subtask: Task = {
+            id,
+            description: description.trim(),
+            optional: optional === "*",
+            completed: completed.toLowerCase() === "x",
+            subtasks: [],
+            requirementRefs: [],
+          };
+          currentTask.subtasks.push(subtask);
+          currentSubtask = subtask;
+          continue;
+        }
       }
 
-      // Match subtask line: - [ ] or - [x] followed by subtask ID and description
-      const subtaskMatch = line.match(
-        /^\s+- \[([ x])\](\*)?\s+(\d+\.\d+)\s+(.+)$/
-      );
-      if (subtaskMatch && currentTask) {
-        const [, completed, optional, id, description] = subtaskMatch;
-        const subtask: Task = {
-          id,
-          description: description.trim(),
-          optional: optional === "*",
-          completed: completed === "x",
-          subtasks: [],
-          requirementRefs: [],
-        };
-        currentTask.subtasks.push(subtask);
-        currentSubtask = subtask;
-        continue;
+      // Match root-level task line (non-indented)
+      // Flexible format: "1", "1.", "1:", "1.1", "1.1.", "1.1:", "1) Desc", "1.) Desc"
+      // Checkbox can be: space, x, X, ~, -
+      if (!isIndented) {
+        const taskMatch = line.match(
+          /^-\s*\[([\sxX~-])\](\*)?\s*(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/i
+        );
+        if (taskMatch) {
+          const [, completed, optional, id, description] = taskMatch;
+          const task: Task = {
+            id,
+            description: description.trim(),
+            optional: optional === "*",
+            completed: completed.toLowerCase() === "x",
+            subtasks: [],
+            requirementRefs: [],
+          };
+          tasks.push(task);
+          currentTask = task;
+          currentSubtask = null;
+          continue;
+        }
       }
 
       // Match requirement references
