@@ -8,13 +8,22 @@ import { SpecMCPClient } from "./mcp-client";
 import { Phase } from "./types";
 import {
   findNextTask,
-  buildExecutionContext,
-  generateTaskExecutionPrompt,
-  markTaskInProgress,
-  updateTaskCheckbox,
 } from "./autonomous-executor";
 import { generateRequirementsWithLLM } from "./llm-requirements-generator";
 import { generateDesignWithLLM } from "./llm-design-generator";
+
+// Store output channel for use in async functions
+let outputChannel: vscode.LogOutputChannel | null = null;
+
+/**
+ * Set the chat participant context (called from extension.ts)
+ */
+export function setChatParticipantContext(
+  _context: vscode.ExtensionContext,
+  channel: vscode.LogOutputChannel
+): void {
+  outputChannel = channel;
+}
 
 /**
  * Represents a parsed spec command
@@ -1049,78 +1058,105 @@ async function handleAutonomousExecution(
   }
 
   stream.markdown(
-    `📋 **Next Task:** ${nextTask.id} - ${nextTask.description}\n\n` +
-      `Marking task as in-progress...\n\n`
+    `📋 **Next Task:** ${nextTask.id} - ${nextTask.description}\n\n`
   );
-
-  // Mark task as in-progress
-  markTaskInProgress(featureName, nextTask.id, workspaceRoot);
-  updateTaskCheckbox(
-    featureName,
-    nextTask.id,
-    "in-progress",
-    workspaceRoot,
-    specDirectory
-  );
-
-  // Build execution context
-  const context = buildExecutionContext(
-    featureName,
-    nextTask,
-    workspaceRoot,
-    specDirectory
-  );
-
-  // Generate prompt for implementation
-  const prompt = generateTaskExecutionPrompt(context);
-
-  stream.markdown(`🔨 **Implementing task ${nextTask.id}...**\n\n`);
 
   try {
-    // Show the task details
-    stream.markdown(
-      `**Task Details:**\n\n` +
-        `${nextTask.description}\n\n`
-    );
-
-    // Show relevant context
-    if (context.requirements) {
-      stream.markdown(
-        `**Requirements Context:**\n\n` +
-          `\`\`\`markdown\n${context.requirements.substring(0, 500)}...\n\`\`\`\n\n`
-      );
+    // Import the autonomous execution function
+    const { executeTaskAutonomously } = await import("./autonomous-executor");
+    
+    // Check if Copilot is available
+    let copilotAvailable = false;
+    try {
+      const models = await vscode.lm.selectChatModels({ vendor: 'copilot' });
+      copilotAvailable = models.length > 0;
+    } catch {
+      copilotAvailable = false;
     }
 
-    if (context.design) {
+    if (!copilotAvailable) {
       stream.markdown(
-        `**Design Context:**\n\n` +
-          `\`\`\`markdown\n${context.design.substring(0, 500)}...\n\`\`\`\n\n`
+        `❌ **Copilot Not Available**\n\n` +
+          `GitHub Copilot is required for autonomous code generation.\n\n` +
+          `**Next Steps:**\n` +
+          `1. Install the GitHub Copilot extension\n` +
+          `2. Sign in with your GitHub account\n` +
+          `3. Verify your Copilot subscription is active\n` +
+          `4. Try again with \`@spec ${featureName} autonomously execute\``
       );
+      return;
     }
 
-    // Provide implementation guidance
     stream.markdown(
-      `**Implementation Prompt:**\n\n` +
-        `\`\`\`\n${prompt}\n\`\`\`\n\n`
+      `🔨 **Generating code for task ${nextTask.id}...**\n\n` +
+        `Using Copilot to autonomously implement this task with test validation...\n\n`
     );
 
-    // Guide the user on next steps
-    stream.markdown(
-      `**Next Steps:**\n\n` +
-        `1. Review the task requirements and context above\n` +
-        `2. Ask me to implement specific files or functionality\n` +
-        `3. Test your implementation\n` +
-        `4. Mark complete with: \`@spec ${featureName} complete ${nextTask.id}\`\n\n` +
-        `**Example prompts:**\n` +
-        `- "Create the file mentioned in the task"\n` +
-        `- "Implement the function described in the task"\n` +
-        `- "Write tests for this task"\n`
+    // Execute task autonomously with code generation
+    const result = await executeTaskAutonomously(
+      featureName,
+      nextTask,
+      workspaceRoot,
+      specDirectory,
+      outputChannel || undefined
     );
+
+    // Report results
+    if (result.success) {
+      stream.markdown(
+        `✅ **Task ${nextTask.id} Completed Successfully!**\n\n` +
+          `**Generated Files:**\n` +
+          `${(result.filesModified || []).map((f) => `- ${f}`).join("\n")}\n\n` +
+          `**Status:** ${result.message}\n\n`
+      );
+
+      // Test results are included in the success/message
+      if (result.success) {
+        stream.markdown(
+          `✨ **Implementation Complete!** The task has been executed.\n\n`
+        );
+      }
+
+      stream.markdown(
+        `**Next Steps:**\n\n` +
+          `- Run \`@spec ${featureName} autonomously execute\` to continue with the next task\n` +
+          `- Or review the generated code and continue with \`@spec ${featureName} continue\`\n\n` +
+          `Check the **Akira** output channel for detailed generation logs.`
+      );
+    } else {
+      stream.markdown(
+        `⚠️ **Task ${nextTask.id} Could Not Be Completed Autonomously**\n\n` +
+          `**Reason:** ${result.error || "Unknown error"}\n\n` +
+          `**Status:** ${result.message}\n\n`
+      );
+
+      if (result.filesModified && result.filesModified.length > 0) {
+        stream.markdown(
+          `**Generated Files (before test failure):**\n` +
+          `${result.filesModified.map((f) => `- ${f}`).join("\n")}\n\n`
+        );
+      }
+
+      stream.markdown(
+        `**Manual Implementation Option:**\n\n` +
+          `1. Review the generated files and test failures in the Akira output channel\n` +
+        `2. Ask Copilot directly for help fixing the test failures\n` +
+        `3. Run \`@spec ${featureName} complete ${nextTask.id}\` when manual fixes are done\n\n` +
+        `Check the **Akira** output channel for detailed error logs.`
+      );
+    }
   } catch (error) {
     stream.markdown(
-      `\n\n❌ **Error implementing task ${nextTask.id}:**\n\n` +
+      `\n\n❌ **Error executing task ${nextTask.id} autonomously:**\n\n` +
         `${error instanceof Error ? error.message : String(error)}\n\n` +
-        `The task has been left in "in-progress" state. You can retry with \`@spec ${featureName} continue\``
+        `**Troubleshooting:**\n\n` +
+        `1. Check that Copilot is installed and enabled\n` +
+        `2. Verify your Copilot subscription is active\n` +
+        `3. Check the **Akira** output channel for detailed error logs\n\n` +
+        `**Manual Implementation Option:**\n\n` +
+        `1. Review the task requirements in the Akira output channel\n` +
+        `2. Ask Copilot directly to implement this task\n` +
+        `3. When complete, run \`@spec ${featureName} complete ${nextTask.id}\` to mark it done`
     );
   }
 }

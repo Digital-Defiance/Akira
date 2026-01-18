@@ -5,10 +5,15 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import * as vscode from "vscode";
 import { getSpecDirectoryPath } from "./spec-directory";
 import { readState, updateTaskStatus } from "./state-manager";
 import { TaskStatus } from "./types";
 import { validateTaskCompletion, TaskValidationResult } from "./task-validator";
+import {
+  generateCodeWithValidation,
+  CodeGenerationRequest,
+} from "./copilot-code-generator";
 
 /**
  * Represents a parsed task from tasks.md
@@ -362,4 +367,198 @@ export function updateTaskCheckbox(
   }
 
   fs.writeFileSync(tasksPath, lines.join("\n"), "utf-8");
+}
+/**
+ * Execute task autonomously using Copilot code generation
+ * Generates code, writes to workspace, validates with tests
+ */
+export async function executeTaskAutonomously(
+  featureName: string,
+  task: ParsedTask,
+  workspaceRoot: string,
+  specDirectory: string,
+  outputChannel?: vscode.LogOutputChannel
+): Promise<TaskExecutionResult> {
+  try {
+    outputChannel?.info(`\n${"=".repeat(80)}`);
+    outputChannel?.info(
+      `🤖 AUTONOMOUS EXECUTION: Task ${task.id} - ${task.description}`
+    );
+    outputChannel?.info(`${"=".repeat(80)}\n`);
+
+    // Mark task as in-progress
+    markTaskInProgress(featureName, task.id, workspaceRoot);
+    updateTaskCheckbox(
+      featureName,
+      task.id,
+      "in-progress",
+      workspaceRoot,
+      specDirectory
+    );
+
+    // Build execution context
+    const executionContext = buildExecutionContext(
+      featureName,
+      task,
+      workspaceRoot,
+      specDirectory
+    );
+
+    outputChannel?.info(`[AutoExec] Building generation request...`);
+
+    // Prepare code generation request
+    const generationRequest: CodeGenerationRequest = {
+      taskId: task.id,
+      taskDescription: task.description,
+      requirements: executionContext.requirements || "",
+      design: executionContext.design,
+    };
+
+    // Find test files related to this task
+    let testFile: string | undefined;
+    const testPatterns = [
+      `${task.id.replace(/\./g, "_")}.test.ts`,
+      `${task.id.replace(/\./g, "_")}.test.js`,
+      `${featureName}.test.ts`,
+      `${featureName}.test.js`,
+    ];
+
+    for (const pattern of testPatterns) {
+      const testPath = path.join(workspaceRoot, "src", pattern);
+      if (fs.existsSync(testPath)) {
+        testFile = path.relative(workspaceRoot, testPath);
+        outputChannel?.info(`[AutoExec] Found test file: ${testFile}`);
+        break;
+      }
+    }
+
+    generationRequest.testFile = testFile;
+
+    outputChannel?.info(`[AutoExec] Requesting code generation from Copilot...`);
+
+    // Generate code with validation
+    const generationResult = await generateCodeWithValidation(
+      generationRequest,
+      workspaceRoot,
+      outputChannel,
+      undefined,
+      2 // max retries
+    );
+
+    if (!generationResult.success) {
+      outputChannel?.error(`[AutoExec] Code generation failed: ${generationResult.error}`);
+
+      // Mark task back as not-started
+      updateTaskCheckbox(
+        featureName,
+        task.id,
+        "not-started",
+        workspaceRoot,
+        specDirectory
+      );
+
+      return {
+        success: false,
+        taskId: task.id,
+        description: task.description,
+        error: generationResult.error,
+        message: `❌ Failed to generate code: ${generationResult.error}`,
+      };
+    }
+
+    outputChannel?.info(`[AutoExec] ✅ Code generated and written to ${Object.keys(generationResult.code).length} files`);
+
+    // Check test results
+    if (generationResult.testResults) {
+      if (generationResult.testResults.passed) {
+        outputChannel?.info(
+          `[AutoExec] ✅ Tests passed! Task ${task.id} completed successfully.`
+        );
+        outputChannel?.info(`[AutoExec] Retry attempts: ${generationResult.retryCount}`);
+
+        // Mark task as completed
+        markTaskCompleted(featureName, task.id, workspaceRoot);
+        updateTaskCheckbox(
+          featureName,
+          task.id,
+          "completed",
+          workspaceRoot,
+          specDirectory
+        );
+
+        return {
+          success: true,
+          taskId: task.id,
+          description: task.description,
+          filesModified: Object.keys(generationResult.code),
+          message: `✅ Task ${task.id} completed autonomously with tests passing`,
+        };
+      } else {
+        outputChannel?.error(
+          `[AutoExec] ❌ Tests failed after ${generationResult.retryCount} retries`
+        );
+        outputChannel?.error(
+          `[AutoExec] Failed tests: ${generationResult.testResults.failedTests?.join(", ")}`
+        );
+
+        // Mark task back as not-started to allow manual retry
+        updateTaskCheckbox(
+          featureName,
+          task.id,
+          "not-started",
+          workspaceRoot,
+          specDirectory
+        );
+
+        return {
+          success: false,
+          taskId: task.id,
+          description: task.description,
+          filesModified: Object.keys(generationResult.code),
+          error: `Tests failed after ${generationResult.retryCount} retries`,
+          message: `⚠️ Code generated but tests failed. Manual review required.`,
+        };
+      }
+    } else {
+      // No tests, assume success
+      outputChannel?.info(`[AutoExec] No test file found. Assuming success.`);
+
+      markTaskCompleted(featureName, task.id, workspaceRoot);
+      updateTaskCheckbox(
+        featureName,
+        task.id,
+        "completed",
+        workspaceRoot,
+        specDirectory
+      );
+
+      return {
+        success: true,
+        taskId: task.id,
+        description: task.description,
+        filesModified: Object.keys(generationResult.code),
+        message: `✅ Task ${task.id} completed autonomously (no tests)`,
+      };
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    outputChannel?.error(`[AutoExec] Autonomous execution error: ${errorMessage}`);
+
+    // Mark task back as not-started
+    updateTaskCheckbox(
+      featureName,
+      task.id,
+      "not-started",
+      workspaceRoot,
+      specDirectory
+    );
+
+    return {
+      success: false,
+      taskId: task.id,
+      description: task.description,
+      error: errorMessage,
+      message: `❌ Error executing task autonomously: ${errorMessage}`,
+    };
+  }
 }

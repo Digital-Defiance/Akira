@@ -1549,6 +1549,11 @@ export async function activate(context: vscode.ExtensionContext) {
   outputChannel.info("Registering Chat Participant...");
   try {
     const chatParticipant = registerChatParticipant(context, mcpClient);
+    
+    // Import and call setChatParticipantContext
+    const { setChatParticipantContext } = await import("./chat-participant");
+    setChatParticipantContext(context, outputChannel);
+    
     context.subscriptions.push(chatParticipant);
     outputChannel.info(
       "✅ Chat Participant registered successfully with ID: spec"
