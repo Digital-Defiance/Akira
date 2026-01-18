@@ -725,28 +725,33 @@ export async function activate(context: vscode.ExtensionContext) {
           );
 
           if (action === "Execute Autonomously") {
-            // Initialize executor if needed
-            if (!autonomousExecutor) {
-              autonomousExecutor = getAutonomousExecutor(
+            // Execute task autonomously with Copilot
+            outputChannel?.appendLine(`🤖 Starting autonomous execution with Copilot...\n`);
+            try {
+              const { executeTaskAutonomously } = await import("./autonomous-executor");
+              const result = await executeTaskAutonomously(
+                featureName,
+                task,
                 workspaceRoot,
-                undefined,
-                undefined,
+                specDirectory,
                 outputChannel ?? undefined
               );
-            }
 
-            // Start autonomous execution
-            outputChannel?.appendLine(`🤖 Starting autonomous execution...\n`);
-            try {
-              const sessionId = await autonomousExecutor.startSession(featureName);
-              outputChannel?.appendLine(`✓ Autonomous session started: ${sessionId}\n`);
-              vscode.window.showInformationMessage(
-                `🤖 Autonomous execution started for ${featureName}`
-              );
+              if (result.success) {
+                outputChannel?.appendLine(`✅ Task ${taskId} completed autonomously\n`);
+                vscode.window.showInformationMessage(
+                  `✅ Task ${taskId} completed: ${result.message}`
+                );
+              } else {
+                outputChannel?.appendLine(`⚠️ Task ${taskId} execution failed: ${result.error}\n`);
+                vscode.window.showWarningMessage(
+                  `⚠️ Task ${taskId}: ${result.message}`
+                );
+              }
             } catch (error) {
-              outputChannel?.error("Failed to start autonomous execution:", error);
+              outputChannel?.error("Failed autonomous execution:", error);
               vscode.window.showErrorMessage(
-                `Failed to start autonomous execution: ${
+                `Failed to execute autonomously: ${
                   error instanceof Error ? error.message : String(error)
                 }`
               );
