@@ -377,7 +377,8 @@ export async function executeTaskAutonomously(
   task: ParsedTask,
   workspaceRoot: string,
   specDirectory: string,
-  outputChannel?: vscode.LogOutputChannel
+  outputChannel?: vscode.LogOutputChannel,
+  chatStream?: vscode.ChatResponseStream
 ): Promise<TaskExecutionResult> {
   try {
     outputChannel?.info(`\n${"=".repeat(80)}`);
@@ -385,6 +386,7 @@ export async function executeTaskAutonomously(
       `🤖 AUTONOMOUS EXECUTION: Task ${task.id} - ${task.description}`
     );
     outputChannel?.info(`${"=".repeat(80)}\n`);
+    chatStream?.markdown(`🤖 **Executing Task ${task.id}**\n\n${task.description}\n\n`);
 
     // Mark task as in-progress
     markTaskInProgress(featureName, task.id, workspaceRoot);
@@ -405,6 +407,7 @@ export async function executeTaskAutonomously(
     );
 
     outputChannel?.info(`[AutoExec] Building generation request...`);
+    chatStream?.markdown(`📋 Loading requirements and design context...\n\n`);
 
     // Prepare code generation request
     const generationRequest: CodeGenerationRequest = {
@@ -435,6 +438,7 @@ export async function executeTaskAutonomously(
     generationRequest.testFile = testFile;
 
     outputChannel?.info(`[AutoExec] Requesting code generation from Copilot...`);
+    chatStream?.markdown(`🔨 Generating code with Copilot...\n\n`);
 
     // Generate code with validation
     const generationResult = await generateCodeWithValidation(
@@ -447,6 +451,7 @@ export async function executeTaskAutonomously(
 
     if (!generationResult.success) {
       outputChannel?.error(`[AutoExec] Code generation failed: ${generationResult.error}`);
+      chatStream?.markdown(`❌ **Code generation failed:** ${generationResult.error}\n\n`);
 
       // Mark task back as not-started
       updateTaskCheckbox(
@@ -467,6 +472,7 @@ export async function executeTaskAutonomously(
     }
 
     outputChannel?.info(`[AutoExec] ✅ Code generated and written to ${Object.keys(generationResult.code).length} files`);
+    chatStream?.markdown(`✅ Generated ${Object.keys(generationResult.code).length} file(s):\n${Object.keys(generationResult.code).map(f => `- ${f}`).join('\n')}\n\n`);
 
     // Check test results
     if (generationResult.testResults) {
@@ -475,6 +481,7 @@ export async function executeTaskAutonomously(
           `[AutoExec] ✅ Tests passed! Task ${task.id} completed successfully.`
         );
         outputChannel?.info(`[AutoExec] Retry attempts: ${generationResult.retryCount}`);
+        chatStream?.markdown(`✅ **Tests Passed!** Task completed successfully.\n\n`);
 
         // Mark task as completed
         markTaskCompleted(featureName, task.id, workspaceRoot);
@@ -500,6 +507,7 @@ export async function executeTaskAutonomously(
         outputChannel?.error(
           `[AutoExec] Failed tests: ${generationResult.testResults.failedTests?.join(", ")}`
         );
+        chatStream?.markdown(`❌ **Tests Failed** after ${generationResult.retryCount} retries\n\nFailed: ${generationResult.testResults.failedTests?.join(', ')}\n\n`);
 
         // Mark task back as not-started to allow manual retry
         updateTaskCheckbox(
@@ -522,6 +530,7 @@ export async function executeTaskAutonomously(
     } else {
       // No tests, assume success
       outputChannel?.info(`[AutoExec] No test file found. Assuming success.`);
+      chatStream?.markdown(`✅ **Task Completed** (no tests found)\n\n`);
 
       markTaskCompleted(featureName, task.id, workspaceRoot);
       updateTaskCheckbox(
@@ -543,6 +552,7 @@ export async function executeTaskAutonomously(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     outputChannel?.error(`[AutoExec] Autonomous execution error: ${errorMessage}`);
+    chatStream?.markdown(`❌ **Error:** ${errorMessage}\n\n`);
 
     // Mark task back as not-started
     updateTaskCheckbox(

@@ -518,106 +518,71 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "akira.startParentTaskFromCodeLens",
-      async (
-        uri: vscode.Uri,
-        line: number,
-        parentTaskId: string,
-        subtaskIds: string[]
-      ) => {
+      async (uri: vscode.Uri, line: number, parentTaskId: string, subtaskIds: string[]) => {
         try {
-          // Extract feature name from the URI path
           const pathParts = uri.fsPath.split(/[/\\]/);
           const specsIndex = pathParts.findIndex((p) => p === "specs");
           const featureName = specsIndex >= 0 ? pathParts[specsIndex + 1] : "";
-
           if (!featureName) {
-            vscode.window.showErrorMessage(
-              "Could not determine feature name from file path"
-            );
+            vscode.window.showErrorMessage("Could not determine feature name from file path");
             return;
           }
-
-          const workspaceRoot =
-            vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+          const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
           if (!workspaceRoot) {
             vscode.window.showErrorMessage("No workspace folder found");
             return;
           }
+          const config = vscode.workspace.getConfiguration("copilotSpec");
+          const specDirectory = config.get<string>("specDirectory") || ".kiro/specs";
 
           outputChannel?.appendLine(`\n${"=".repeat(80)}`);
-          outputChannel?.appendLine(
-            `🚀 STARTING TASK ${parentTaskId} - ${subtaskIds.length} subtasks`
-          );
+          outputChannel?.appendLine(`🚀 STARTING TASK ${parentTaskId} - ${subtaskIds.length} subtasks`);
           outputChannel?.appendLine(`Feature: ${featureName}`);
           outputChannel?.appendLine(`Subtasks: ${subtaskIds.join(", ")}`);
           outputChannel?.appendLine(`${"=".repeat(80)}\n`);
 
           const action = await vscode.window.showInformationMessage(
             `🚀 Start Task ${parentTaskId} with ${subtaskIds.length} subtasks?`,
-            "Start Sequential",
+            "Execute Autonomously",
             "Cancel"
           );
+          if (action !== "Execute Autonomously") return;
 
-          if (action !== "Start Sequential") {
-            return;
-          }
-
-          // Mark parent task as in-progress
           await updateTaskCheckbox(uri, line, "~");
           taskCodeLensProvider?.refresh();
 
-          // Execute subtasks sequentially
+          const { parseTasks, executeTaskAutonomously } = await import("./autonomous-executor");
+          const tasksPath = path.join(getSpecDirectoryPath(featureName, workspaceRoot), "tasks.md");
+          const tasksContent = fs.readFileSync(tasksPath, "utf-8");
+          const state = readState(featureName, workspaceRoot);
+          const tasks = parseTasks(tasksContent, state?.taskStatuses || {});
+
           for (const taskId of subtaskIds) {
-            // Find the task line
-            const document = await vscode.workspace.openTextDocument(uri);
-            const text = document.getText();
-            const lines = text.split("\n");
-            let taskLine = -1;
-
-            for (let i = 0; i < lines.length; i++) {
-              // Flexible regex: handles various checkbox states and separators
-              const match = lines[i].match(
-                /^-\s*\[([\sxX~-])\]\s*(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/i
-              );
-              if (match && match[2] === taskId) {
-                taskLine = i;
-                break;
-              }
-            }
-
-            if (taskLine === -1) {
-              outputChannel?.appendLine(
-                `⚠️  Subtask ${taskId} not found, skipping...`
-              );
+            const task = tasks.find((t) => t.id === taskId);
+            if (!task) {
+              outputChannel?.appendLine(`⚠️  Subtask ${taskId} not found, skipping...`);
               continue;
             }
 
-            // Execute this subtask
-            outputChannel?.appendLine(`\n▶️  Starting subtask ${taskId}...`);
-            await vscode.commands.executeCommand(
-              "akira.startTaskFromCodeLens",
-              uri,
-              taskLine,
-              taskId
-            );
-
-            // Wait a bit before starting next task
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            outputChannel?.appendLine(`\n▶️  Executing subtask ${taskId}...`);
+            const result = await executeTaskAutonomously(featureName, task, workspaceRoot, specDirectory, outputChannel ?? undefined);
+            
+            if (!result.success) {
+              vscode.window.showErrorMessage(`❌ Subtask ${taskId} failed: ${result.error}`);
+              return;
+            }
+            outputChannel?.appendLine(`✅ Completed subtask ${taskId}`);
+            taskCodeLensProvider?.refresh();
           }
 
-          outputChannel?.appendLine(
-            `\n✅ Task ${parentTaskId} - Started all ${subtaskIds.length} subtasks`
-          );
-          vscode.window.showInformationMessage(
-            `✅ Task ${parentTaskId} - Started all ${subtaskIds.length} subtasks`
-          );
+          await updateTaskCheckbox(uri, line, "x");
+          updateTaskStatus(featureName, parentTaskId, "completed", workspaceRoot);
+          taskCodeLensProvider?.refresh();
+          outputChannel?.appendLine(`\n✅ Task ${parentTaskId} - Completed all ${subtaskIds.length} subtasks`);
+          vscode.window.showInformationMessage(`✅ Task ${parentTaskId} - Completed all ${subtaskIds.length} subtasks`);
         } catch (error) {
           outputChannel?.error("Failed to start parent task:", error);
-          vscode.window.showErrorMessage(
-            `Failed to start task: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
+          vscode.window.showErrorMessage(`Failed to start task: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     )
@@ -725,50 +690,49 @@ export async function activate(context: vscode.ExtensionContext) {
           );
 
           if (action === "Execute Autonomously") {
-            // Execute task autonomously with Copilot
-            outputChannel?.appendLine(`🤖 Starting autonomous execution with Copilot...\n`);
-            try {
-              const { executeTaskAutonomously } = await import("./autonomous-executor");
-              const result = await executeTaskAutonomously(
-                featureName,
-                task,
-                workspaceRoot,
-                specDirectory,
-                outputChannel ?? undefined
-              );
-
-              if (result.success) {
-                outputChannel?.appendLine(`✅ Task ${taskId} completed autonomously\n`);
-                vscode.window.showInformationMessage(
-                  `✅ Task ${taskId} completed: ${result.message}`
-                );
-              } else {
-                outputChannel?.appendLine(`⚠️ Task ${taskId} execution failed: ${result.error}\n`);
-                vscode.window.showWarningMessage(
-                  `⚠️ Task ${taskId}: ${result.message}`
-                );
-              }
-            } catch (error) {
-              outputChannel?.error("Failed autonomous execution:", error);
-              vscode.window.showErrorMessage(
-                `Failed to execute autonomously: ${
-                  error instanceof Error ? error.message : String(error)
-                }`
-              );
-            }
-          } else if (action === "Manual Implementation") {
-            outputChannel?.appendLine(`NEXT STEPS:`);
-            outputChannel?.appendLine(
-              `1. Review the task requirements and context above`
-            );
-            outputChannel?.appendLine(
-              `2. Use @workspace or regular Copilot to implement the required files/code`
-            );
-            outputChannel?.appendLine(`3. Test your implementation`);
-            outputChannel?.appendLine(`4. Click "✓ Complete Task" when done\n`);
+            // Check if this is a parent task with subtasks
+            const document = await vscode.workspace.openTextDocument(uri);
+            const text = document.getText();
+            const lines = text.split("\n");
             
-            // Open chat focused on implementing this task
-            await vscode.commands.executeCommand("workbench.action.chat.open");
+            // Check if task has subtasks
+            const isParentTask = /^\d+$/.test(taskId);
+            if (isParentTask) {
+              const subtasks: string[] = [];
+              for (let j = line + 1; j < lines.length; j++) {
+                const subtaskLine = lines[j];
+                if (subtaskLine.match(/^-\s*\[[\sxX~-]\]\s*\d+[:.\)\s]+/i)) {
+                  const isAnotherParent = subtaskLine.match(/^-\s*\[[\sxX~-]\]\s*(\d+)[:.\)\s]+/i);
+                  if (isAnotherParent && /^\d+$/.test(isAnotherParent[1])) {
+                    break;
+                  }
+                }
+                const subtaskMatch = subtaskLine.match(/^-\s*\[([\sxX~-])\]\s*(\d+(?:\.\d+)*)[:.\)\s]*(.+)$/i);
+                if (subtaskMatch && subtaskMatch[2].startsWith(taskId + ".")) {
+                  subtasks.push(subtaskMatch[2]);
+                }
+              }
+              
+              if (subtasks.length > 0) {
+                // Execute all subtasks via chat
+                for (const subtaskId of subtasks) {
+                  await vscode.commands.executeCommand("workbench.action.chat.open", {
+                    query: `@spec execute ${featureName} ${subtaskId}`
+                  });
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                return;
+              }
+            }
+            
+            // Single task - open chat
+            await vscode.commands.executeCommand("workbench.action.chat.open", {
+              query: `@spec execute ${featureName} ${taskId}`
+            });
+          } else if (action === "Manual Implementation") {
+            await vscode.commands.executeCommand("workbench.action.chat.open", {
+              query: `Implement task ${taskId} for ${featureName}: ${task.description}`
+            });
           } else if (action === "View Context") {
             outputChannel?.show(true);
           }

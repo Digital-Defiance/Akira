@@ -971,9 +971,6 @@ async function handleChatRequest(
     // Get the user's message
     const message = request.prompt;
 
-    // ALWAYS show what we received for debugging
-    stream.markdown(`🔍 **DEBUG: Received message:** \`${message}\`\n\n`);
-
     // Check if MCP client is connected
     if (!mcpClient || !mcpClient.isConnected()) {
       stream.markdown(
@@ -989,11 +986,6 @@ async function handleChatRequest(
 
     // Parse the command
     const command = parseCommand(message);
-
-    // Show parsed result
-    stream.markdown(
-      `🔍 **DEBUG: Parsed as:** \`${JSON.stringify(command)}\`\n\n`
-    );
 
     // Route to appropriate MCP tool
     const result = await routeCommand(command, mcpClient);
@@ -1045,21 +1037,27 @@ async function handleAutonomousExecution(
       `Finding next incomplete task...\n\n`
   );
 
-  // Find the next task
-  const nextTask = findNextTask(featureName, workspaceRoot, specDirectory);
+  // Execute tasks in a loop until all are complete
+  let tasksExecuted = 0;
+  const maxTasksPerRun = 10; // Safety limit
 
-  if (!nextTask) {
+  while (tasksExecuted < maxTasksPerRun) {
+    // Find the next task
+    const nextTask = findNextTask(featureName, workspaceRoot, specDirectory);
+
+    if (!nextTask) {
+      stream.markdown(
+        `✅ **All Tasks Complete!**\n\n` +
+          `Executed ${tasksExecuted} task(s) in this run. ` +
+          `There are no more incomplete tasks for "${featureName}". ` +
+          `The spec has been fully implemented!`
+      );
+      return;
+    }
+
     stream.markdown(
-      `✅ **All Tasks Complete!**\n\n` +
-        `There are no more incomplete tasks for "${featureName}". ` +
-        `The spec has been fully implemented!`
+      `📋 **Task ${tasksExecuted + 1}:** ${nextTask.id} - ${nextTask.description}\n\n`
     );
-    return;
-  }
-
-  stream.markdown(
-    `📋 **Next Task:** ${nextTask.id} - ${nextTask.description}\n\n`
-  );
 
   try {
     // Import the autonomous execution function
@@ -1098,7 +1096,8 @@ async function handleAutonomousExecution(
       nextTask,
       workspaceRoot,
       specDirectory,
-      outputChannel || undefined
+      outputChannel || undefined,
+      stream
     );
 
     // Report results
@@ -1110,19 +1109,10 @@ async function handleAutonomousExecution(
           `**Status:** ${result.message}\n\n`
       );
 
-      // Test results are included in the success/message
-      if (result.success) {
-        stream.markdown(
-          `✨ **Implementation Complete!** The task has been executed.\n\n`
-        );
-      }
-
-      stream.markdown(
-        `**Next Steps:**\n\n` +
-          `- Run \`@spec ${featureName} autonomously execute\` to continue with the next task\n` +
-          `- Or review the generated code and continue with \`@spec ${featureName} continue\`\n\n` +
-          `Check the **Akira** output channel for detailed generation logs.`
-      );
+      tasksExecuted++;
+      
+      // Continue to next task
+      stream.markdown(`---\n\n`);
     } else {
       stream.markdown(
         `⚠️ **Task ${nextTask.id} Could Not Be Completed Autonomously**\n\n` +
@@ -1144,6 +1134,8 @@ async function handleAutonomousExecution(
         `3. Run \`@spec ${featureName} complete ${nextTask.id}\` when manual fixes are done\n\n` +
         `Check the **Akira** output channel for detailed error logs.`
       );
+      // Stop execution on failure
+      return;
     }
   } catch (error) {
     stream.markdown(
@@ -1158,5 +1150,18 @@ async function handleAutonomousExecution(
         `2. Ask Copilot directly to implement this task\n` +
         `3. When complete, run \`@spec ${featureName} complete ${nextTask.id}\` to mark it done`
     );
+    // Stop execution on error
+    return;
   }
+  }
+
+  // If we hit the max tasks limit
+  stream.markdown(
+    `⚠️ **Execution Paused**\n\n` +
+      `Executed ${tasksExecuted} tasks in this run (safety limit reached).\n\n` +
+      `**Next Steps:**\n\n` +
+      `- Run \`@spec ${featureName} continue\` to execute the next batch of tasks\n` +
+      `- Or review the generated code before continuing\n\n` +
+      `Check the **Akira** output channel for detailed generation logs.`
+  );
 }

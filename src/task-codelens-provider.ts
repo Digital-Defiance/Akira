@@ -79,10 +79,9 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
             })
           );
         }
-        continue; // Don't add regular task buttons for parent tasks
       }
 
-      // Add appropriate action based on task status for regular subtasks
+      // Add appropriate action based on task status for all tasks
       if (task.status === "pending") {
         // Start task button
         codeLenses.push(
@@ -155,8 +154,8 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
       }
 
       // Try to match any task checkbox line first
-      // Flexible: handles various checkbox states and spacing
-      const match = line.match(/^-\s*\[([\sxX~-])\]\s*(.+)$/i);
+      // Flexible: handles various checkbox states and spacing, including indented tasks
+      const match = line.match(/^(\s*)-\s*\[([\sxX~-])\]\s*(.+)$/i);
       if (match) {
         console.log(
           `[TaskCodeLensProvider] Line ${i}: Matched checkbox: "${line.substring(
@@ -164,8 +163,8 @@ export class TaskCodeLensProvider implements vscode.CodeLensProvider {
             60
           )}"`
         );
-        const checkbox = match[1];
-        const taskText = match[2].trim();
+        const checkbox = match[2];
+        const taskText = match[3].trim();
 
         // Extract task ID - flexible format handling:
         // "1. Description", "1: Description", "1 Description", "1.1. Description", "1.) Description"
