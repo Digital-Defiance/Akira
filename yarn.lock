@@ -7,10 +7,10 @@
   resolved "https://registry.yarnpkg.com/@ai-capabilities-suite/mcp-client-base/-/mcp-client-base-1.0.0.tgz#09ba219803b1488f67d1ad1f1e8b1d02bde6fb3e"
   integrity sha512-+Rbr7U82/OX7ausqVRlgr2Z06X7D9NIrkbqtzecQmMMbQG0PJ7cFoFhy+8S0Hg0KuipiH0wamPihnXTZUi2eeQ==
 
-"@ai-capabilities-suite/vscode-shared-status-bar@^1.0.23":
-  version "1.0.23"
-  resolved "https://registry.npmjs.org/@ai-capabilities-suite/vscode-shared-status-bar/-/vscode-shared-status-bar-1.0.23.tgz#bfa6bbbe831eeffce39a9a4b54ad2f429aaa713e"
-  integrity sha512-Eb+IIzMvd1+ee9uV+z70WnY03DUo97ZuD6Ww/R/qOv3L9BjDLEmHr//APl7SiSLD1Bon19pAupbcxl2NVfDLuA==
+"@ai-capabilities-suite/vscode-shared-status-bar@^1.0.24":
+  version "1.0.24"
+  resolved "https://registry.npmjs.org/@ai-capabilities-suite/vscode-shared-status-bar/-/vscode-shared-status-bar-1.0.24.tgz#f8ccfcdba87904e0043a244369923a11653302b8"
+  integrity sha512-J1UEqhbUgS3oc7nELdxrOdoSzYeQL4AmMmyCU0ly6Fj8GNFy4v0ikAAj4iBcOFV5C9flYdnIeD3eE4TIyJFtQg==
 
 "@esbuild/aix-ppc64@0.19.12":
   version "0.19.12"
